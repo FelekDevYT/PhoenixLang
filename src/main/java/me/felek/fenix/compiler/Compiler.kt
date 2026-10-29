@@ -7,6 +7,7 @@ import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
 import me.felek.ast.exprs.BreakExpr
+import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
@@ -320,6 +321,14 @@ class Compiler() : Visitor<Void?> {
         return null
     }
 
+    override fun visit(castExpr: CastExpr): Void? {
+        visit(castExpr.value)
+
+        ga!!.cast(castExpr.fromAsmType, Type.getType(castExpr.toType.descriptor))
+
+        return null
+    }
+
     override fun visit(expr: Expr): Void? {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -340,6 +349,7 @@ class Compiler() : Visitor<Void?> {
             is ForExpr -> visit(expr)
             is BreakExpr -> visit(expr)
             is ContinueExpr -> visit(expr)
+            is CastExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

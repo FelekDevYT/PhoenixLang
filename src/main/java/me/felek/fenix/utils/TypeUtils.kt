@@ -83,4 +83,30 @@ object TypeUtils {
 
         return false
     }
+
+    @JvmStatic
+    fun canCast(typeA: ValueType, typeB: ValueType): Boolean {
+        val convertable = listOf<ValueType>(ValueType.INT, ValueType.FLOAT)
+
+        if (convertable.contains(typeA) && convertable.contains(typeB)) {
+            return true
+        }
+
+        return false
+    }
+
+    @JvmStatic
+    fun getCastReturn(typeA: ValueType, typeB: ValueType): ValueType {
+        if (typeA == typeB) {
+            return typeA
+        }
+
+        if (typeA == ValueType.INT && typeB == ValueType.FLOAT) {
+            return ValueType.FLOAT
+        } else if (typeA == ValueType.FLOAT && typeB == ValueType.INT) {
+            return ValueType.FLOAT
+        }
+
+        return ValueType.VOID//unallowed cast
+    }
 }

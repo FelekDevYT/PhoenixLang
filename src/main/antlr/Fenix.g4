@@ -23,6 +23,7 @@ expr:
     | assignmentDecl                        #Assignment
     | 'break'                               #Break
     | 'continue'                            #Continue
+    | expr 'as' type                        #Cast
     | varDecl                               #VariableDeclaration
     | 'return' expr?                        #Return
     ;

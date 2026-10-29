@@ -6,6 +6,7 @@ import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
 import me.felek.ast.exprs.BreakExpr
+import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
@@ -264,6 +265,18 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return ValueType.VOID
     }
 
+    override fun visit(castExpr: CastExpr): ValueType {
+        val out = visit(castExpr.value)
+
+        if (!TypeUtils.canCast(out, castExpr.toType)) {
+            errors.add(Error(0x20A, "Unallowed cast"))
+        }
+
+        castExpr.fromAsmType = Type.getType(out.descriptor)
+
+        return TypeUtils.getCastReturn(out, castExpr.toType)
+    }
+
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -284,6 +297,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is ForExpr -> visit(expr)
             is BreakExpr -> visit(expr)
             is ContinueExpr -> visit(expr)
+            is CastExpr -> visit(expr)
             else -> {
                 errors.add(Error(0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

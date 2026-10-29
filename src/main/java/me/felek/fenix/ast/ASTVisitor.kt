@@ -8,6 +8,7 @@ import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
 import me.felek.ast.exprs.BreakExpr
+import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
@@ -160,6 +161,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
 
     override fun visitContinue(ctx: FenixParser.ContinueContext?): Expr? {
         return ContinueExpr(ctx!!.start.line, ctx.start.charPositionInLine)
+    }
+
+    override fun visitCast(ctx: FenixParser.CastContext?): Expr? {
+        return CastExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, TypeUtils.typeByName(ctx.type().text))
     }
 
     override fun visitFor(ctx: FenixParser.ForContext?): Expr {
