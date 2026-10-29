@@ -7,6 +7,8 @@ import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.BreakExpr
+import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
@@ -150,6 +152,14 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
 
     override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr? {
         return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, visit(ctx.expr())!!)
+    }
+
+    override fun visitBreak(ctx: FenixParser.BreakContext?): Expr? {
+        return BreakExpr(ctx!!.start.line, ctx.start.charPositionInLine)
+    }
+
+    override fun visitContinue(ctx: FenixParser.ContinueContext?): Expr? {
+        return ContinueExpr(ctx!!.start.line, ctx.start.charPositionInLine)
     }
 
     override fun visitFor(ctx: FenixParser.ForContext?): Expr {

@@ -6,6 +6,8 @@ import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.BreakExpr
+import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
@@ -46,6 +48,10 @@ interface Visitor<T> {
     fun visit(eqCmp: EqCmpExpr): T
     fun visit(whileExpr: WhileExpr): T
     fun visit(forExpr: ForExpr): T
+
+    fun visit(breakExpr: BreakExpr): T
+    fun visit(continueExpr: ContinueExpr): T
+
     fun visit(assignment: AssignmentExpression): T
 
     fun visit(expr: Expr): T

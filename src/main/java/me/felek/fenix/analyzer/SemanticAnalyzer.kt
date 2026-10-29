@@ -5,6 +5,8 @@ import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.BreakExpr
+import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
@@ -25,6 +27,8 @@ import me.felek.fenix.scope.FunctionSymbol
 import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 import org.objectweb.asm.Type
+import java.util.ArrayDeque
+import java.util.Deque
 
 /**
  * @className: SemanticAnalyzer
@@ -38,6 +42,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
     private var errors: MutableList<Error> = mutableListOf()
     private var functions: MutableMap<String, FunctionSymbol> = mutableMapOf()
     private var currentFunction: FunctionSymbol? = null
+    private var continueQueue: ArrayDeque<Boolean> = ArrayDeque()
+    private var breakQueue: ArrayDeque<Boolean> = ArrayDeque()
 
     override fun visit(expr: IntExpr): ValueType {
         return ValueType.INT
@@ -200,7 +206,13 @@ class SemanticAnalyzer : Visitor<ValueType> {
             errors.add(Error(0x203, "Non-bool condition"))
         }
 
-        return visit(eqCmp.statement)
+        breakQueue.push(true)
+        continueQueue.push(true)
+        val result = visit(eqCmp.statement)
+        breakQueue.pop()
+        continueQueue.pop()
+
+        return result
     }
 
     override fun visit(assignment: AssignmentExpression): ValueType {
@@ -216,6 +228,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(forExpr: ForExpr): ValueType {
+        breakQueue.push(true)
+        continueQueue.push(true)
         val temp: Environment = env
         env = Environment(env)
 
@@ -228,8 +242,26 @@ class SemanticAnalyzer : Visitor<ValueType> {
         val out = visit(forExpr.body)
 
         env = temp
+        breakQueue.pop()
+        continueQueue.pop()
 
         return out
+    }
+
+    override fun visit(breakExpr: BreakExpr): ValueType {
+        if (breakQueue.isEmpty()) {
+            errors.add(Error(0x410, "Break outside loop"))
+        }
+
+        return ValueType.VOID
+    }
+
+    override fun visit(continueExpr: ContinueExpr): ValueType {
+        if (continueQueue.isEmpty()) {
+            errors.add(Error(0x411, "Continue outside loop"))
+        }
+
+        return ValueType.VOID
     }
 
     override fun visit(expr: Expr): ValueType {
@@ -250,6 +282,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is WhileExpr -> visit(expr)
             is AssignmentExpression -> visit(expr)
             is ForExpr -> visit(expr)
+            is BreakExpr -> visit(expr)
+            is ContinueExpr -> visit(expr)
             else -> {
                 errors.add(Error(0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

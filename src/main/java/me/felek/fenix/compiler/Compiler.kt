@@ -6,6 +6,8 @@ import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.BreakExpr
+import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
@@ -34,6 +36,8 @@ import org.objectweb.asm.commons.GeneratorAdapter
 import org.objectweb.asm.Opcodes.*;
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.Method
+import java.util.ArrayDeque
+import java.util.Deque
 
 /**
  * @className: Compiler
@@ -47,6 +51,8 @@ class Compiler() : Visitor<Void?> {
     private var env: Environment = Environment(null)
     private lateinit var moduleName: String
     private var functions: MutableMap<String, FunctionSymbol> = mutableMapOf()
+    private var breakQueue: Deque<Label> = ArrayDeque()
+    private var continueQueue: Deque<Label> = ArrayDeque()
 
     override fun visit(expr: IntExpr): Void? {
         ga!!.push(expr.value)
@@ -249,12 +255,18 @@ class Compiler() : Visitor<Void?> {
         val lblStart: Label = ga!!.newLabel()
         val lblEnd: Label = ga!!.newLabel()
 
+        breakQueue.push(lblEnd)
+        continueQueue.push(lblStart)
+
         ga!!.mark(lblStart)
         visit(eqCmp.condition)
         ga!!.ifZCmp(GeneratorAdapter.EQ, lblEnd)
         visit(eqCmp.statement)
         ga!!.goTo(lblStart)
         ga!!.mark(lblEnd)
+
+        breakQueue.pop()
+        continueQueue.pop()
 
         return null
     }
@@ -272,6 +284,9 @@ class Compiler() : Visitor<Void?> {
         val start: Label = ga!!.newLabel()
         val end: Label = ga!!.newLabel()
 
+        breakQueue.push(end)
+        continueQueue.push(start)
+
         val temp = env
         env = Environment(env)
 
@@ -286,6 +301,21 @@ class Compiler() : Visitor<Void?> {
         ga!!.mark(end)
 
         env = temp
+
+        breakQueue.pop()
+        continueQueue.pop()
+
+        return null
+    }
+
+    override fun visit(breakExpr: BreakExpr): Void? {
+        ga!!.goTo(breakQueue.peek())
+
+        return null
+    }
+
+    override fun visit(continueExpr: ContinueExpr): Void? {
+        ga!!.goTo(continueQueue.peek())
 
         return null
     }
@@ -308,6 +338,8 @@ class Compiler() : Visitor<Void?> {
             is WhileExpr -> visit(expr)
             is AssignmentExpression -> visit(expr)
             is ForExpr -> visit(expr)
+            is BreakExpr -> visit(expr)
+            is ContinueExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

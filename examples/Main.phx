@@ -2,6 +2,10 @@ using "java.lang.IO";
 
 func main(args: Str[]) -> Int {
     for (var a: Int = 0; a < 10; a = a + 1) {
+        if (a == 5) {
+            continue;
+        };
+
         IO.println(123);
     };
     return 15;

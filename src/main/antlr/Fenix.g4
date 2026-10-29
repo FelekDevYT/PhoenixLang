@@ -21,6 +21,8 @@ expr:
     | 'while' '('? expr ')'? statement      #While
     | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
     | assignmentDecl                        #Assignment
+    | 'break'                               #Break
+    | 'continue'                            #Continue
     | varDecl                               #VariableDeclaration
     | 'return' expr?                        #Return
     ;
