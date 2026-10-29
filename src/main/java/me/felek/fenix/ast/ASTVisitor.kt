@@ -9,6 +9,7 @@ import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
+import me.felek.ast.exprs.ForExpr
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IntExpr
@@ -147,8 +148,12 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return InvokeStaticExpr(ctx.start.line, ctx.start.charPositionInLine, ctx.ID(0).text, ctx.ID(1).text, list)
     }
 
-    override fun visitAssignment(ctx: FenixParser.AssignmentContext?): Expr? {
+    override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr? {
         return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, visit(ctx.expr())!!)
+    }
+
+    override fun visitFor(ctx: FenixParser.ForContext?): Expr {
+        return ForExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.varDecl())!! as VariableDeclaration, visit(ctx.expr())!!, visit(ctx.assignmentDecl())!! as AssignmentExpression, if (ctx.statement().expr() == null) visit(ctx.statement().block())!! else visit(ctx.statement().expr())!!)
     }
 
     override fun visitInvokeLocal(ctx: FenixParser.InvokeLocalContext?): Expr? {
@@ -161,9 +166,8 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return InvokeLocalExpr(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list)
     }
 
-    override fun visitVariableDeclaration(ctx: FenixParser.VariableDeclarationContext?): Expr? {
-        return VariableDeclaration(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, ctx.CONST() != null,
-            if (ctx.type().text != null) TypeUtils.typeByName(ctx.type().text) else null, if (ctx.expr() != null) visit(ctx.expr()) else null)
+    override fun visitVarDecl(ctx: FenixParser.VarDeclContext?): Expr? {
+        return VariableDeclaration(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, ctx.CONST() != null, ctx.type()?.let { TypeUtils.typeByName(it.text) }, ctx.expr()?.let { visit(it) })
     }
 
     override fun visitId(ctx: FenixParser.IdContext?): Expr? {

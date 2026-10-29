@@ -8,6 +8,7 @@ import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
+import me.felek.ast.exprs.ForExpr
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IntExpr
@@ -267,6 +268,28 @@ class Compiler() : Visitor<Void?> {
         return null
     }
 
+    override fun visit(forExpr: ForExpr): Void? {
+        val start: Label = ga!!.newLabel()
+        val end: Label = ga!!.newLabel()
+
+        val temp = env
+        env = Environment(env)
+
+        visit(forExpr.initializer)
+
+        ga!!.mark(start)
+        visit(forExpr.condition)
+        ga!!.ifZCmp(GeneratorAdapter.EQ, end)
+        visit(forExpr.body)
+        visit(forExpr.increment)
+        ga!!.goTo(start)
+        ga!!.mark(end)
+
+        env = temp
+
+        return null
+    }
+
     override fun visit(expr: Expr): Void? {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -284,6 +307,7 @@ class Compiler() : Visitor<Void?> {
             is InvokeLocalExpr -> visit(expr)
             is WhileExpr -> visit(expr)
             is AssignmentExpression -> visit(expr)
+            is ForExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

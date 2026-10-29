@@ -1,10 +1,8 @@
 using "java.lang.IO";
 
 func main(args: Str[]) -> Int {
-    var a: Int = 0;
-    while (a > 10) {
-        IO.println(1234);
-        a = a + 1;
+    for (var a: Int = 0; a < 10; a = a + 1) {
+        IO.println(123);
     };
     return 15;
 }

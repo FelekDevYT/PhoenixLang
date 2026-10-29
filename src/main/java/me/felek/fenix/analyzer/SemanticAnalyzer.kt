@@ -7,6 +7,7 @@ import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
+import me.felek.ast.exprs.ForExpr
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IntExpr
@@ -214,6 +215,23 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return visit(assignment.value)
     }
 
+    override fun visit(forExpr: ForExpr): ValueType {
+        val temp: Environment = env
+        env = Environment(env)
+
+        visit(forExpr.initializer)
+        if (visit(forExpr.condition) != ValueType.BOOL) {
+            errors.add(Error(0x203, "Non-bool condition"))
+        }
+        visit(forExpr.increment)
+
+        val out = visit(forExpr.body)
+
+        env = temp
+
+        return out
+    }
+
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -231,6 +249,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is InvokeLocalExpr -> visit(expr)
             is WhileExpr -> visit(expr)
             is AssignmentExpression -> visit(expr)
+            is ForExpr -> visit(expr)
             else -> {
                 errors.add(Error(0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

@@ -19,13 +19,16 @@ expr:
     | ID '.' ID '(' (expr (',' expr)*)? ')' #InvokeStatic
     | ID '(' (expr (',' expr)*)? ')'        #InvokeLocal
     | 'while' '('? expr ')'? statement      #While
-    | ID '=' expr                           #Assignment
-    | (VAR | CONST) ID (':' type)? ('=' expr)? #VariableDeclaration
+    | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
+    | assignmentDecl                        #Assignment
+    | varDecl                               #VariableDeclaration
     | 'return' expr?                        #Return
     ;
 
 statement: expr | block;
 block: '{' (expr ';')* '}';
+varDecl: (VAR | CONST) ID (':' type)? ('=' expr)?;
+assignmentDecl: ID '=' expr;
 
 type: base=('Int' | 'Str' | 'Float' | 'Bool') ('[' ']')*;
 
