@@ -255,4 +255,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
     fun getResult(): ASTResult {
         return result
     }
+
+    fun getErrors(): List<Error> {
+        return errors
+    }
 }
