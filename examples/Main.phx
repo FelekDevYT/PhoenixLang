@@ -1,6 +1,5 @@
 using "java.lang.IO";
 
-func main(args: Str[]) -> Float {
-    var a: Float = 15;
-    return 15 as Float;
+func main(args: Str[]) -> Str {
+    return args[0];
 }

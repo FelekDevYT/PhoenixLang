@@ -1,5 +1,7 @@
 package me.felek.ast.type;
 
+import java.util.Objects;
+
 /**
  * @className: ValueType
  * @author: Felek
@@ -11,7 +13,7 @@ public class ValueType {
     private String name;
     private int dimensions = 0;//0 - not an array
 
-    public ValueType(String name, String descriptor, int dimensions) {
+    public ValueType(String descriptor, String name, int dimensions) {
         this.name = name;
         this.descriptor = descriptor;
         this.dimensions = dimensions;
@@ -59,5 +61,16 @@ public class ValueType {
                 ", name='" + name + '\'' +
                 ", dimensions=" + dimensions +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof ValueType valueType)) return false;
+        return dimensions == valueType.dimensions && Objects.equals(descriptor, valueType.descriptor) && Objects.equals(name, valueType.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(descriptor, name, dimensions);
     }
 }

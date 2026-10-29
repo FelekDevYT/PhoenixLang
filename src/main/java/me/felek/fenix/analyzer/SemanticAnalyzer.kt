@@ -1,6 +1,7 @@
 package me.felek.fenix.analyzer
 
 import me.felek.ast.Expr
+import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
@@ -29,7 +30,6 @@ import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 import org.objectweb.asm.Type
 import java.util.ArrayDeque
-import java.util.Deque
 
 /**
  * @className: SemanticAnalyzer
@@ -135,8 +135,9 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(ret: ReturnExpr): ValueType {
-        if (visit(ret.expr) != currentFunction!!.returnType) {
-            errors.add(Error(ret.line, ret.column, 0x322, "Wrong function return"))
+        val real = visit(ret.expr)
+        if (real!= currentFunction!!.returnType) {
+            errors.add(Error(ret.line, ret.column, 0x322, "Wrong function return: expected $real but found ${currentFunction!!.returnType}"))
         }
         return ValueType.VOID
     }
@@ -279,6 +280,27 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return TypeUtils.getCastReturn(out, castExpr.toType)
     }
 
+    override fun visit(arrayGet: ArrayGetExpr): ValueType {
+        val value = visit(arrayGet.left)
+        arrayGet.firstValue = value
+
+        if (value.dimensions == 0) {
+            errors.add(Error(arrayGet.line, arrayGet.column, 0x511, "Trying to index non-array"))
+            return ValueType.VOID
+        }
+        if (value.dimensions < arrayGet.indexes.size) {
+            errors.add(Error(arrayGet.line, arrayGet.column, 511, "Trying to get a lot of dimensions"))
+            return ValueType.VOID
+        }
+
+        var desc = value.descriptor
+        for (index in arrayGet.indexes) {
+            if (desc.startsWith("[")) desc = desc.substring(1)
+        }
+
+        return ValueType(desc, value.name, value.dimensions - arrayGet.indexes.size)
+    }
+
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -300,6 +322,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is BreakExpr -> visit(expr)
             is ContinueExpr -> visit(expr)
             is CastExpr -> visit(expr)
+            is ArrayGetExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

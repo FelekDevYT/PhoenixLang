@@ -13,55 +13,34 @@ import org.objectweb.asm.Type
 object TypeUtils {
     @JvmStatic
     public fun typeByName(name: String): ValueType {
-        val arr = name.count({ it == '[' })
-        var nm = name
-        nm = name.replace("[", "")
-        nm = nm.replace("]", "")
-
-        var base = ValueType.VOID;
-
-        when (nm) {
-            "Int" -> base = ValueType.INT
-            "Float" -> base = ValueType.FLOAT
-            "Bool" -> base = ValueType.BOOL
-            "Str" -> base = ValueType.STRING
-            "Void" -> base = ValueType.VOID
+        val arr = name.count { it == '[' }
+        val base: ValueType = when (val nm = name.replace("[", "").replace("]", "")) {
+            "Int" -> ValueType.INT
+            "Float" -> ValueType.FLOAT
+            "Bool" -> ValueType.BOOL
+            "Str" -> ValueType.STRING
+            "Void" -> ValueType.VOID
             else -> throw UndefinedTypeException(nm)
         }
-        base.descriptor = "[".repeat(arr) + base.descriptor
 
-        base.dimensions = arr
-
-        return base
+        return ValueType("[".repeat(arr) + base.descriptor, base.name, arr)
     }
 
     @JvmStatic
     fun typeByDescriptor(descriptor: String): ValueType {
-        var type: ValueType = ValueType.VOID
-        var des = descriptor
-        des.replace("[", "")
+        val dims = descriptor.count { it == '[' }
+        val des = descriptor.replace("[", "")
 
-        when (des) {
-            Int.javaClass.descriptorString() -> type = ValueType.INT
-            Float.javaClass.descriptorString() -> type = ValueType.FLOAT
-            Boolean.javaClass.descriptorString() -> type = ValueType.BOOL
-            "V" -> type = ValueType.VOID
-            "Ljava/lang/String;" -> type = ValueType.STRING
-            else -> throw RuntimeException("Unknown type: " + descriptor)
+        val base: ValueType = when (des) {
+            "I" -> ValueType.INT
+            "F"-> ValueType.FLOAT
+            "Z" -> ValueType.BOOL
+            "V" -> ValueType.VOID
+            "Ljava/lang/String;" -> ValueType.STRING
+            else -> throw RuntimeException("Unknown type: $descriptor")
         }
 
-        type.dimensions = descriptor.count( { it == '[' })
-
-        return type
-
-//        return when(descriptor) {
-//            Int.javaClass.descriptorString() -> ValueType.INT
-//            Float.javaClass.descriptorString() -> ValueType.FLOAT
-//            Boolean.javaClass.descriptorString() -> ValueType.BOOL
-//            "V" -> ValueType.VOID
-//            "Ljava/lang/String;" -> ValueType.STRING
-//            else -> throw RuntimeException("Unknown type: " + descriptor)
-//        }
+        return ValueType("[".repeat(dims) + base.descriptor, base.name, dims)
     }
 
     @JvmStatic

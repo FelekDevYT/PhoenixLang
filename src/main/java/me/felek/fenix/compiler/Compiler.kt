@@ -2,6 +2,7 @@ package me.felek.fenix.compiler
 
 import me.felek.ast.Expr
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
@@ -23,6 +24,7 @@ import me.felek.ast.exprs.util.ECType
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.loop.WhileExpr
+import me.felek.ast.type.ValueType
 import me.felek.ast.visitor.Visitor
 import me.felek.fenix.ast.ASTResult
 import me.felek.fenix.scope.Environment
@@ -329,6 +331,21 @@ class Compiler() : Visitor<Void?> {
         return null
     }
 
+    override fun visit(arrayGet: ArrayGetExpr): Void? {
+        visit(arrayGet.left)
+
+        val usedValue: ValueType = arrayGet.firstValue
+        for ((idx, index) in arrayGet.indexes.withIndex()) {
+            ga!!.push(index)
+            ga!!.arrayLoad(Type.getType(usedValue.descriptor))
+
+            usedValue.dimensions -= 1
+            usedValue.descriptor.replaceFirst("[", "")
+        }
+
+        return null
+    }
+
     override fun visit(expr: Expr): Void? {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -350,6 +367,7 @@ class Compiler() : Visitor<Void?> {
             is BreakExpr -> visit(expr)
             is ContinueExpr -> visit(expr)
             is CastExpr -> visit(expr)
+            is ArrayGetExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

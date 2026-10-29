@@ -3,6 +3,7 @@ package me.felek.fenix.ast
 import me.felek.ast.Expr
 import me.felek.ast.decl.Arg
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
@@ -52,7 +53,6 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
             list.add(Arg(arg.ID().text, TypeUtils.typeByName(arg.type().text)))
         }
 
-
         functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(ctx.type().text), if (ctx.block() == null) visit(ctx.expr())!! else visit(ctx.block())!!))
 
         return null
@@ -68,6 +68,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
 
     override fun visitFloat(ctx: FenixParser.FloatContext?): Expr? {
         return FloatExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.FLOAT().text.toFloat())
+    }
+
+    override fun visitArrayGet(ctx: FenixParser.ArrayGetContext?): Expr? {
+        return ArrayGetExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, ctx.INT().map { it.text.toInt() })
     }
 
     override fun visitBool(ctx: FenixParser.BoolContext?): Expr? {
