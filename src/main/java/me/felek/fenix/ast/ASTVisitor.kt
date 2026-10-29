@@ -3,6 +3,7 @@ package me.felek.fenix.ast
 import me.felek.ast.Expr
 import me.felek.ast.decl.Arg
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
@@ -56,6 +57,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(ctx.type().text), if (ctx.block() == null) visit(ctx.expr())!! else visit(ctx.block())!!))
 
         return null
+    }
+
+    override fun visitArrayCreate(ctx: FenixParser.ArrayCreateContext?): Expr? {
+        return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().map { it.text.toInt() }, TypeUtils.typeByName(ctx.type().text))
     }
 
     override fun visitInt(ctx: FenixParser.IntContext?): Expr? {

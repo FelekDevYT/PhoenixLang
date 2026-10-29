@@ -1,6 +1,7 @@
 package me.felek.fenix.analyzer
 
 import me.felek.ast.Expr
+import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
@@ -111,7 +112,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             varDecl.type = type
         } else {
             if (varDecl.type != type) {
-                errors.add(Error(varDecl.line, varDecl.column, 0x200, "Incompatible types"))
+                errors.add(Error(varDecl.line, varDecl.column, 0x200, "Incompatible types: ${varDecl.type} and $type"))
             }
         }
 
@@ -298,7 +299,17 @@ class SemanticAnalyzer : Visitor<ValueType> {
             if (desc.startsWith("[")) desc = desc.substring(1)
         }
 
-        return ValueType(desc, value.name, value.dimensions - arrayGet.indexes.size)
+        return ValueType(desc, value.name.removeSuffix("[]".repeat(arrayGet.indexes.size)), value.dimensions - arrayGet.indexes.size)
+    }
+
+    override fun visit(arrayCreate: ArrayCreateExpr): ValueType {
+        for (el in arrayCreate.indexes) {
+            if (el < 0) {
+                errors.add(Error(arrayCreate.line, arrayCreate.column, 0x516, "Negative array index"))
+            }
+        }
+
+        return ValueType("[".repeat(arrayCreate.indexes.size) + arrayCreate.type.descriptor, arrayCreate.type.name + "[]".repeat(arrayCreate.indexes.size), arrayCreate.indexes.size)
     }
 
     override fun visit(expr: Expr): ValueType {
@@ -323,6 +334,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is ContinueExpr -> visit(expr)
             is CastExpr -> visit(expr)
             is ArrayGetExpr -> visit(expr)
+            is ArrayCreateExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

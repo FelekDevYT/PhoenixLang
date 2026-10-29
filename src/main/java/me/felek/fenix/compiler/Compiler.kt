@@ -2,6 +2,7 @@ package me.felek.fenix.compiler
 
 import me.felek.ast.Expr
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
@@ -346,6 +347,22 @@ class Compiler() : Visitor<Void?> {
         return null
     }
 
+    override fun visit(arrayCreate: ArrayCreateExpr): Void? {
+        if (arrayCreate.indexes.size == 1) {
+            ga!!.push(arrayCreate.indexes[0])
+            ga!!.newArray(Type.getType(arrayCreate.type.descriptor))
+        } else {
+            //>=1
+            for (index in arrayCreate.indexes) {
+                ga!!.push(index)
+            }
+
+            ga!!.visitMultiANewArrayInsn("[".repeat(arrayCreate.indexes.size) + arrayCreate.type.descriptor, arrayCreate.indexes.size)
+        }
+
+        return null
+    }
+
     override fun visit(expr: Expr): Void? {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -368,6 +385,7 @@ class Compiler() : Visitor<Void?> {
             is ContinueExpr -> visit(expr)
             is CastExpr -> visit(expr)
             is ArrayGetExpr -> visit(expr)
+            is ArrayCreateExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

@@ -23,7 +23,7 @@ object TypeUtils {
             else -> throw UndefinedTypeException(nm)
         }
 
-        return ValueType("[".repeat(arr) + base.descriptor, base.name, arr)
+        return ValueType("[".repeat(arr) + base.descriptor, base.name + "[]".repeat(arr), arr)
     }
 
     @JvmStatic
@@ -40,7 +40,7 @@ object TypeUtils {
             else -> throw RuntimeException("Unknown type: $descriptor")
         }
 
-        return ValueType("[".repeat(dims) + base.descriptor, base.name, dims)
+        return ValueType("[".repeat(dims) + base.descriptor, base.name + "[]".repeat(dims), dims)
     }
 
     @JvmStatic

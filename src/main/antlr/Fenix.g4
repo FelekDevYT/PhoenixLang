@@ -21,6 +21,7 @@ expr:
     | 'while' '('? expr ')'? statement      #While
     | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
     | expr ('[' INT ']')+                   #ArrayGet
+    | ('[' INT ']')+ type                   #ArrayCreate//[12][61]Int
     | assignmentDecl                        #Assignment
     | 'break'                               #Break
     | 'continue'                            #Continue

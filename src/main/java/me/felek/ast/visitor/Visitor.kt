@@ -1,6 +1,7 @@
 package me.felek.ast.visitor
 
 import me.felek.ast.Expr
+import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
@@ -55,6 +56,7 @@ interface Visitor<T> {
     fun visit(assignment: AssignmentExpression): T
     fun visit(castExpr: CastExpr): T
     fun visit(arrayGet: ArrayGetExpr): T
+    fun visit(arrayCreate: ArrayCreateExpr): T
 
     fun visit(expr: Expr): T
     fun visit(decl: ASTResult): T
