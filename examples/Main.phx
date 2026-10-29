@@ -1,5 +1,6 @@
 using "java.lang.IO";
 
 func main(args: Str[]) -> Float {
+    var a = 15;
     return 15 as Float;
 }

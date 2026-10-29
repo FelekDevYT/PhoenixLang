@@ -91,11 +91,13 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(varDecl: VariableDeclaration): ValueType {
-        if (varDecl.value == null) {
+        if (varDecl.value == null && varDecl.type == null) {
             if (!varDecl.isConst) {
                 errors.add(Error(0x101, "Variable without initializer"))
+                return ValueType.VOID
             } else {
                 errors.add(Error(0x100, "Constant without initializer"))
+                return ValueType.VOID
             }
         }
 

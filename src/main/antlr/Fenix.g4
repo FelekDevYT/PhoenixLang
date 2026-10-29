@@ -37,10 +37,9 @@ type: base=('Int' | 'Str' | 'Float' | 'Bool') ('[' ']')*;
 
 VAR: 'var';
 CONST: 'const';
-
 INT: [0-9]+;
 FLOAT: [0-9]+ '.' [0-9]+;
-STRING: '"' (~["\\"] | '\\' .)* '"' | '"""' ('"'? ~["\\"] | '\\' .)* '"""';
+STRING: '"' (~["\\"] | '\\' .)* '"';
 BOOL: 'true' | 'false';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 
