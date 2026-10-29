@@ -22,6 +22,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation(kotlin("test"))
 
+    implementation("com.github.ajalt.clikt:clikt:5.0.1")
+
     implementation(platform("org.ow2.asm:asm-bom:9.11"))
     implementation("org.ow2.asm:asm")
     implementation("org.ow2.asm:asm-tree")

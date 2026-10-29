@@ -30,9 +30,8 @@ import me.felek.fenix.utils.TypeUtils
  * @date: 27/10/2026 14:59
  */
 
-class ASTVisitor : FenixBaseVisitor<Expr?>() {
+class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
     public val functions: MutableList<FunctionDeclaration> = mutableListOf()
-    public val moduleName: String = "Test";
     public val importMap: MutableMap<String, String> = mutableMapOf()
 
     override fun visitUsingDeclaration(ctx: FenixParser.UsingDeclarationContext?): Expr? {
