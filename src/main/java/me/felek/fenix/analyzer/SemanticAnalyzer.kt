@@ -1,6 +1,7 @@
 package me.felek.fenix.analyzer
 
 import me.felek.ast.Expr
+import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
@@ -14,6 +15,7 @@ import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
+import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.ast.visitor.Visitor
 import me.felek.fenix.ast.ASTResult
@@ -192,6 +194,26 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return func.returnType
     }
 
+    override fun visit(eqCmp: WhileExpr): ValueType {
+        if (visit(eqCmp.condition) != ValueType.BOOL) {
+            errors.add(Error(0x203, "Non-bool condition"))
+        }
+
+        return visit(eqCmp.statement)
+    }
+
+    override fun visit(assignment: AssignmentExpression): ValueType {
+        var variable = env.lookupVariable(assignment.name)
+        if (variable == null) {
+            errors.add(Error(0x120, "Unknown name"))
+        }
+        if (variable.isConst) {
+            errors.add(Error(0x110, "Constant can not be assigned"))
+        }
+
+        return visit(assignment.value)
+    }
+
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -207,6 +229,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is IfElseExpr -> visit(expr)
             is EqCmpExpr -> visit(expr)
             is InvokeLocalExpr -> visit(expr)
+            is WhileExpr -> visit(expr)
+            is AssignmentExpression -> visit(expr)
             else -> {
                 errors.add(Error(0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

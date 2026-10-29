@@ -1,9 +1,9 @@
 package me.felek.fenix.ast
 
-import com.sun.jdi.IntegerValue
 import me.felek.ast.Expr
 import me.felek.ast.decl.Arg
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
@@ -19,6 +19,7 @@ import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
+import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.bright.parser.FenixBaseVisitor
 import me.felek.bright.parser.FenixParser
@@ -89,6 +90,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return BinaryExpr(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, bin)
     }
 
+    override fun visitWhile(ctx: FenixParser.WhileContext?): Expr? {
+        return WhileExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, if (ctx.statement().expr() == null) visit(ctx.statement().block())!! else visit(ctx.statement().expr())!!)
+    }
+
     override fun visitIfElse(ctx: FenixParser.IfElseContext?): Expr? {
         //expr0 - if condition
         //expr1 - if statement
@@ -113,7 +118,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
             else -> ECType.LT
         }
 
-        return EqCmpExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, op)
+        return EqCmpExpr(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, op)
     }
 
     override fun visitMultiplicative(ctx: FenixParser.MultiplicativeContext?): Expr? {
@@ -142,6 +147,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return InvokeStaticExpr(ctx.start.line, ctx.start.charPositionInLine, ctx.ID(0).text, ctx.ID(1).text, list)
     }
 
+    override fun visitAssignment(ctx: FenixParser.AssignmentContext?): Expr? {
+        return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, visit(ctx.expr())!!)
+    }
+
     override fun visitInvokeLocal(ctx: FenixParser.InvokeLocalContext?): Expr? {
         var list: MutableList<Expr> = mutableListOf()
 
@@ -154,7 +163,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
 
     override fun visitVariableDeclaration(ctx: FenixParser.VariableDeclarationContext?): Expr? {
         return VariableDeclaration(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, ctx.CONST() != null,
-            if (ctx.type().text != null) TypeUtils.typeByName(ctx.type().text) else null, if (ctx!!.expr() != null) visit(ctx!!.expr()) else null)
+            if (ctx.type().text != null) TypeUtils.typeByName(ctx.type().text) else null, if (ctx.expr() != null) visit(ctx.expr()) else null)
     }
 
     override fun visitId(ctx: FenixParser.IdContext?): Expr? {

@@ -2,6 +2,7 @@ package me.felek.ast.visitor
 
 import me.felek.ast.Expr
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
@@ -15,6 +16,7 @@ import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
+import me.felek.ast.loop.WhileExpr
 import me.felek.fenix.ast.ASTResult
 import me.felek.fenix.ast.ASTVisitor
 
@@ -41,6 +43,8 @@ interface Visitor<T> {
     fun visit(bin: BinaryExpr): T
     fun visit(ifelse: IfElseExpr): T
     fun visit(eqCmp: EqCmpExpr): T
+    fun visit(whileExpr: WhileExpr): T
+    fun visit(assignment: AssignmentExpression): T
 
     fun visit(expr: Expr): T
     fun visit(decl: ASTResult): T

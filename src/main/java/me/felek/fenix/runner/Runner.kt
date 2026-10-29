@@ -31,7 +31,7 @@ class Phx : CliktCommand(
     override fun run() = Unit
 }
 
-class compile : CliktCommand(
+class Compile : CliktCommand(
     name =  "compile"
 ) {
     val inputFile: String by argument(name = "inputFile", help = "File to compile")
@@ -97,4 +97,4 @@ class compile : CliktCommand(
     }
 }
 
-fun main(args: Array<String>) = Phx().subcommands(compile()).main(args)
+fun main(args: Array<String>) = Phx().subcommands(Compile()).main(args)

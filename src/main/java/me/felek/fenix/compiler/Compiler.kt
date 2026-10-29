@@ -2,6 +2,7 @@ package me.felek.fenix.compiler
 
 import me.felek.ast.Expr
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
 import me.felek.ast.exprs.BoolExpr
@@ -17,6 +18,7 @@ import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
+import me.felek.ast.loop.WhileExpr
 import me.felek.ast.visitor.Visitor
 import me.felek.fenix.ast.ASTResult
 import me.felek.fenix.scope.Environment
@@ -242,6 +244,29 @@ class Compiler() : Visitor<Void?> {
         return null
     }
 
+    override fun visit(eqCmp: WhileExpr): Void? {
+        val lblStart: Label = ga!!.newLabel()
+        val lblEnd: Label = ga!!.newLabel()
+
+        ga!!.mark(lblStart)
+        visit(eqCmp.condition)
+        ga!!.ifZCmp(GeneratorAdapter.EQ, lblEnd)
+        visit(eqCmp.statement)
+        ga!!.goTo(lblStart)
+        ga!!.mark(lblEnd)
+
+        return null
+    }
+
+    override fun visit(assignment: AssignmentExpression): Void? {
+        visit(assignment.value)
+
+        val variable = env.lookupVariable(assignment.name)
+        ga!!.storeLocal(variable.id)
+
+        return null
+    }
+
     override fun visit(expr: Expr): Void? {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -257,6 +282,8 @@ class Compiler() : Visitor<Void?> {
             is IfElseExpr -> visit(expr)
             is EqCmpExpr -> visit(expr)
             is InvokeLocalExpr -> visit(expr)
+            is WhileExpr -> visit(expr)
+            is AssignmentExpression -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

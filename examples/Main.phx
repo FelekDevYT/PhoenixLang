@@ -1,3 +1,10 @@
+using "java.lang.IO";
+
 func main(args: Str[]) -> Int {
+    var a: Int = 0;
+    while (a > 10) {
+        IO.println(1234);
+        a = a + 1;
+    };
     return 15;
 }

@@ -18,6 +18,8 @@ expr:
     | 'if' '('? expr ')'? statement ('else' statement)? #IfElse
     | ID '.' ID '(' (expr (',' expr)*)? ')' #InvokeStatic
     | ID '(' (expr (',' expr)*)? ')'        #InvokeLocal
+    | 'while' '('? expr ')'? statement      #While
+    | ID '=' expr                           #Assignment
     | (VAR | CONST) ID (':' type)? ('=' expr)? #VariableDeclaration
     | 'return' expr?                        #Return
     ;
