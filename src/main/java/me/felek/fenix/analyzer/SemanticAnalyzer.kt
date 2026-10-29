@@ -83,7 +83,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
                 it.name.equals(expr.method) && it.parameterCount == argTypes.size && it.parameterTypes.zip(argTypes).all { (p, a) -> p.descriptorString().equals("Ljava/lang/Object;") || TypeUtils.typeByDescriptor(p.descriptorString()) == a }
             }!!//TODO: 0x311 implementation
         } catch (exc: ClassNotFoundException) {
-            errors.add(Error(0xB00, "Java class not found"))
+            errors.add(Error(expr.line, expr.column, 0xB00, "Java class not found"))
             return ValueType.VOID
         }
 
@@ -93,10 +93,10 @@ class SemanticAnalyzer : Visitor<ValueType> {
     override fun visit(varDecl: VariableDeclaration): ValueType {
         if (varDecl.value == null && varDecl.type == null) {
             if (!varDecl.isConst) {
-                errors.add(Error(0x101, "Variable without initializer"))
+                errors.add(Error(varDecl.line, varDecl.column, 0x101, "Variable without initializer"))
                 return ValueType.VOID
             } else {
-                errors.add(Error(0x100, "Constant without initializer"))
+                errors.add(Error(varDecl.line, varDecl.column, 0x100, "Constant without initializer"))
                 return ValueType.VOID
             }
         }
@@ -104,19 +104,19 @@ class SemanticAnalyzer : Visitor<ValueType> {
         val type = visit(varDecl.value!!)
 
         if (type == ValueType.VOID) {
-            errors.add(Error(0x221, "Void can not be used as variable type"))
+            errors.add(Error(varDecl.line, varDecl.column, 0x221, "Void can not be used as variable type"))
         }
 
         if (varDecl.type == null) {
             varDecl.type = type
         } else {
             if (varDecl.type != type) {
-                errors.add(Error(0x200, "Incompatible types"))
+                errors.add(Error(varDecl.line, varDecl.column, 0x200, "Incompatible types"))
             }
         }
 
         if (env.variables.containsKey(varDecl.name)) {
-            errors.add(Error(0x102, "Redefinition of variable in one scope"))
+            errors.add(Error(varDecl.line, varDecl.column, 0x102, "Redefinition of variable in one scope"))
             return varDecl.type!!
         }
 
@@ -127,7 +127,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(id: IdExpr): ValueType {
         if (env.lookupVariable(id.id) == null) {
-            errors.add(Error(0x120, "Unknown name " + id.id))
+            errors.add(Error(id.line, id.column, 0x120, "Unknown name " + id.id))
             return ValueType.VOID
         }
 
@@ -136,7 +136,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(ret: ReturnExpr): ValueType {
         if (visit(ret.expr) != currentFunction!!.returnType) {
-            errors.add(Error(0x322, "Wrong function return"))
+            errors.add(Error(ret.line, ret.column, 0x322, "Wrong function return"))
         }
         return ValueType.VOID
     }
@@ -146,15 +146,15 @@ class SemanticAnalyzer : Visitor<ValueType> {
         val typeB = visit(bin.b)
 
         if (typeA == ValueType.INT && typeB == ValueType.FLOAT || typeA == ValueType.FLOAT && typeB == ValueType.INT) {
-            errors.add(Error(0x204, "Int and Float can't be used without casting"))
+            errors.add(Error(bin.line, bin.column, 0x204, "Int and Float can't be used without casting"))
         }
 
         if (!TypeUtils.isBinaryComparable(typeA, typeB)) {
-            errors.add(Error(0x201, "Operator is not applicable to type"))
+            errors.add(Error(bin.line, bin.column, 0x201, "Operator is not applicable to type"))
         }
 
         if (typeA != typeB) {
-            errors.add(Error(0x200, "Incompatible types"))
+            errors.add(Error(bin.line, bin.column, 0x200, "Incompatible types"))
         }
 
         bin.type = Type.getType(visit(bin.b).descriptor)
@@ -163,12 +163,12 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(ifelse: IfElseExpr): ValueType {
         if (visit(ifelse.ifExpr) != ValueType.BOOL) {
-            errors.add(Error(0x203, "Non-bool condition value"))
+            errors.add(Error(ifelse.line, ifelse.column, 0x203, "Non-bool condition value"))
         }
         var output = visit(ifelse.ifStmt)
         if(ifelse.elseStmt != null) {
             if (visit(ifelse.elseStmt!!) != output) {
-                errors.add(Error(0x401, "if and else blocks must have same types!"))
+                errors.add(Error(ifelse.line, ifelse.column, 0x401, "if and else blocks must have same types!"))
             }
         }
 
@@ -187,17 +187,17 @@ class SemanticAnalyzer : Visitor<ValueType> {
     override fun visit(expr: InvokeLocalExpr): ValueType {
         if (!functions.containsKey(expr.method)) {
             if (env.lookupVariable(expr.method) != null) {
-                errors.add(Error(0x312, "Call of variable as function"))
+                errors.add(Error(expr.line, expr.column, 0x312, "Call of variable as function"))
                 return ValueType.VOID
             }
-            errors.add(Error(0x330, "Unknown function: " + expr.method))
+            errors.add(Error(expr.line, expr.column, 0x330, "Unknown function: " + expr.method))
             return ValueType.VOID
         }
         val func = functions.get(expr.method)!!
 
         for ((index, arg) in expr.args.withIndex()) {
             if (visit(arg) != func.args[index]) {
-                errors.add(Error(0x311, "Wrong function argument"))
+                errors.add(Error(expr.line, expr.column, 0x311, "Wrong function argument"))
             }
         }
 
@@ -206,7 +206,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(eqCmp: WhileExpr): ValueType {
         if (visit(eqCmp.condition) != ValueType.BOOL) {
-            errors.add(Error(0x203, "Non-bool condition"))
+            errors.add(Error(eqCmp.line, eqCmp.column, 0x203, "Non-bool condition"))
         }
 
         breakQueue.push(true)
@@ -221,10 +221,10 @@ class SemanticAnalyzer : Visitor<ValueType> {
     override fun visit(assignment: AssignmentExpression): ValueType {
         var variable = env.lookupVariable(assignment.name)
         if (variable == null) {
-            errors.add(Error(0x120, "Unknown name"))
+            errors.add(Error(assignment.line, assignment.column, 0x120, "Unknown name"))
         }
         if (variable.isConst) {
-            errors.add(Error(0x110, "Constant can not be assigned"))
+            errors.add(Error(assignment.line, assignment.column, 0x110, "Constant can not be assigned"))
         }
 
         return visit(assignment.value)
@@ -238,7 +238,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
         visit(forExpr.initializer)
         if (visit(forExpr.condition) != ValueType.BOOL) {
-            errors.add(Error(0x203, "Non-bool condition"))
+            errors.add(Error(forExpr.line, forExpr.column, 0x203, "Non-bool condition"))
         }
         visit(forExpr.increment)
 
@@ -253,7 +253,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(breakExpr: BreakExpr): ValueType {
         if (breakQueue.isEmpty()) {
-            errors.add(Error(0x410, "Break outside loop"))
+            errors.add(Error(breakExpr.line, breakExpr.column, 0x410, "Break outside loop"))
         }
 
         return ValueType.VOID
@@ -261,7 +261,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(continueExpr: ContinueExpr): ValueType {
         if (continueQueue.isEmpty()) {
-            errors.add(Error(0x411, "Continue outside loop"))
+            errors.add(Error(continueExpr.line, continueExpr.column, 0x411, "Continue outside loop"))
         }
 
         return ValueType.VOID
@@ -271,7 +271,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
         val out = visit(castExpr.value)
 
         if (!TypeUtils.canCast(out, castExpr.toType)) {
-            errors.add(Error(0x20A, "Unallowed cast"))
+            errors.add(Error(castExpr.line, castExpr.column, 0x20A, "Unallowed cast"))
         }
 
         castExpr.fromAsmType = Type.getType(out.descriptor)
@@ -301,7 +301,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is ContinueExpr -> visit(expr)
             is CastExpr -> visit(expr)
             else -> {
-                errors.add(Error(0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
+                errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID
             }
         }
@@ -312,14 +312,14 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
         for (f in decl.functions) {
             if (functions.containsKey(f.name)) {
-                errors.add(Error(0x300, "Double function declaration"))
+                errors.add(Error(f.line, f.column, 0x300, "Double function declaration"))
                 continue
             }
 
             val usedNames: MutableList<String> = mutableListOf()
             for (arg in f.args) {
                 if (usedNames.contains(arg.name)) {
-                    errors.add(Error(0x301, "Double function argument name"))
+                    errors.add(Error(f.line, f.column, 0x301, "Double function argument name"))
                     continue
                 }
                 usedNames.add(arg.name)

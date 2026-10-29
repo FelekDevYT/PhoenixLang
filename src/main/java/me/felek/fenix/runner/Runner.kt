@@ -13,6 +13,7 @@ import me.felek.fenix.analyzer.SemanticAnalyzer
 import me.felek.fenix.ast.ASTVisitor
 import me.felek.fenix.compiler.Compiler
 import me.felek.fenix.listener.ErrorStrategy
+import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.OtherUtils.formatError
 import org.antlr.v4.runtime.*
 import java.nio.file.Files
@@ -43,8 +44,9 @@ class Compile : CliktCommand(
 
     override fun run() {
         val errors: MutableList<String?> = ArrayList<String?>()
+        val line: String = Files.readString(Paths.get(inputFile))
 
-        val lexer = FenixLexer(CharStreams.fromString(Files.readString(Paths.get(inputFile))))
+        val lexer = FenixLexer(CharStreams.fromString(line))
         lexer.removeErrorListeners()
         lexer.addErrorListener(object : BaseErrorListener() {
             override fun syntaxError(
@@ -86,8 +88,9 @@ class Compile : CliktCommand(
         sema.visit(ast.getResult())
 
         if (!sema.getErrors().isEmpty()) {
-            sema.getErrors()
-                .forEach(Consumer { e: Error? -> System.err.println("[ " + e!!.code + " ] " + e.message) })
+            for (error in sema.getErrors()) {
+                System.err.println(OtherUtils.formatOutError(error.code, error.message, error.line, error.column, line.split("\n")[error.line - 1], inputFile))
+            }
             return
         }
 

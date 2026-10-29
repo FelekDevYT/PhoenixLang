@@ -6,4 +6,4 @@ package me.felek.fenix.analyzer
  * @date: 27/10/2026 19:08
  */
 
-data class Error(var code: Int, var message: String)
+data class Error(var line: Int, var column: Int, var code: Int, var message: String)

@@ -16,4 +16,15 @@ object OtherUtils {
     public fun formatError(code: Int, line: Int, column: Int, message: String): String {
         return "[$code] [$line;$column] $message"
     }
+
+    @JvmStatic
+    public fun formatOutError(code: Int, message: String, line: Int, column: Int, codeline: String, filepath: String): String {
+        return """
+            error[${code.toString(16)}]: $message
+              --> $filepath:$line:$column
+                |
+               $line |      $codeline
+                |
+        """.trimIndent()
+    }
 }
