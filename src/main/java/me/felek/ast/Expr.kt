@@ -6,5 +6,4 @@ package me.felek.ast
  * @date: 27/10/2026 14:08
  */
 
-open class Expr(line: Int, column: Int) : Node(line, column) {
-}
+open class Expr(line: Int, column: Int) : Node(line, column)

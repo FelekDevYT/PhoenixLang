@@ -12,7 +12,7 @@ import org.objectweb.asm.Type
 
 object TypeUtils {
     @JvmStatic
-    public fun typeByName(name: String): ValueType {
+    fun typeByName(name: String): ValueType {
         val arr = name.count { it == '[' }
         val base: ValueType = when (val nm = name.replace("[", "").replace("]", "")) {
             "Int" -> ValueType.INT
@@ -44,7 +44,7 @@ object TypeUtils {
     }
 
     @JvmStatic
-    public fun getAsmType(fullName: String): Type {
+    fun getAsmType(fullName: String): Type {
         return when (fullName) {
             "Int" -> Type.INT_TYPE
             "Float" -> Type.FLOAT_TYPE
@@ -56,22 +56,14 @@ object TypeUtils {
 
     @JvmStatic
     fun isBinaryComparable(type1: ValueType, type2: ValueType): Boolean {
-        if (type1 == type2) {
-            return true
-        }
-
-        return false
+        return type1 == type2
     }
 
     @JvmStatic
     fun canCast(typeA: ValueType, typeB: ValueType): Boolean {
         val convertable = listOf<ValueType>(ValueType.INT, ValueType.FLOAT)
 
-        if (convertable.contains(typeA) && convertable.contains(typeB)) {
-            return true
-        }
-
-        return false
+        return convertable.contains(typeA) && convertable.contains(typeB)
     }
 
     @JvmStatic

@@ -8,5 +8,4 @@ import me.felek.ast.Expr
  * @date: 27/10/2026 14:08
  */
 
-class IntExpr(line: Int, column: Int, var value: Int) : Expr(line, column) {
-}
+class IntExpr(line: Int, column: Int, var value: Int) : Expr(line, column)

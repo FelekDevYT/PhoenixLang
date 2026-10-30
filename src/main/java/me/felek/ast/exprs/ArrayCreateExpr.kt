@@ -9,5 +9,4 @@ import me.felek.ast.type.ValueType
  * @date: 29/10/2026 20:46
  */
 
-class ArrayCreateExpr(line: Int, column: Int, var indexes: List<Int>, var type: ValueType) : Expr(line, column) {
-}
+class ArrayCreateExpr(line: Int, column: Int, var indexes: List<Int>, var type: ValueType) : Expr(line, column)

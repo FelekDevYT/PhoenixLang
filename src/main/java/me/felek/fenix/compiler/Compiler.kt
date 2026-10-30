@@ -1,7 +1,6 @@
 package me.felek.fenix.compiler
 
 import me.felek.ast.Expr
-import me.felek.ast.decl.FunctionDeclaration
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
@@ -49,7 +48,7 @@ import java.util.Deque
  * @date: 27/10/2026 15:23
  */
 
-class Compiler() : Visitor<Void?> {
+class Compiler : Visitor<Unit> {
     private var cw: ClassWriter = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
     private var ga: GeneratorAdapter? = null
     private var env: Environment = Environment(null)
@@ -58,52 +57,41 @@ class Compiler() : Visitor<Void?> {
     private var breakQueue: Deque<Label> = ArrayDeque()
     private var continueQueue: Deque<Label> = ArrayDeque()
 
-    override fun visit(expr: IntExpr): Void? {
+    override fun visit(expr: IntExpr) {
         ga!!.push(expr.value)
-
-        return null
     }
 
-    override fun visit(expr: FloatExpr): Void? {
+    override fun visit(expr: FloatExpr) {
         ga!!.push(expr.value)
-
-        return null
     }
 
-    override fun visit(expr: StrExpr): Void? {
+    override fun visit(expr: StrExpr) {
         ga!!.push(expr.value)
-
-        return null
     }
 
-    override fun visit(expr: BoolExpr): Void? {
+    override fun visit(expr: BoolExpr) {
         ga!!.push(expr.value)
-
-        return null
     }
 
-    override fun visit(expr: BlockExpr): Void? {
+    override fun visit(expr: BlockExpr) {
         val temp: Environment = env
         env = Environment(env)
         for (e in expr.body) {
             visit(e)
         }
         env = temp
-
-        return null
     }
 
-    override fun visit(expr: InvokeStaticExpr): Void? {
+    override fun visit(expr: InvokeStaticExpr) {
         for (arg in expr.args) {
             visit(arg)
         }
 
         ga!!.invokeStatic(TypeUtils.getAsmType(expr.owner), Method.getMethod(expr.methodImpl))
-
-        return null
     }
 
-    override fun visit(expr: InvokeLocalExpr): Void? {
+    @Suppress("kotlin:S6611")
+    override fun visit(expr: InvokeLocalExpr) {
         for (arg in expr.args) {
             visit(arg)
         }
@@ -118,34 +106,30 @@ class Compiler() : Visitor<Void?> {
         sb.append(")")
 
         ga!!.invokeStatic(TypeUtils.getAsmType(moduleName), Method.getMethod(sb.toString()))
-
-        return null
     }
 
-    override fun visit(varDecl: VariableDeclaration): Void? {
+    override fun visit(varDecl: VariableDeclaration) {
         val symbol = VariableSymbol(varDecl.name, varDecl.type!!, varDecl.isConst)
 
-        var local = ga!!.newLocal(TypeUtils.getAsmType(varDecl.type!!.name))
+        val local = ga!!.newLocal(TypeUtils.getAsmType(varDecl.type!!.name))
         symbol.id = local
 
         visit(varDecl.value!!)
         ga!!.storeLocal(local)
 
         env.defineVariable(varDecl.name, symbol)
-
-        return null
     }
 
-    override fun visit(ast: ASTResult): Void? {
-        cw.visit(V21, ACC_PUBLIC, ast.moduleName, null, "java/lang/Object", null)//Java 21 bytecode support(later, Java 8/11/21/28 support)
+    override fun visit(decl: ASTResult) {
+        cw.visit(V21, ACC_PUBLIC, decl.moduleName, null, "java/lang/Object", null)//Java 21 bytecode support(later, Java 8/11/21/28 support)
 
-        this.moduleName = ast.moduleName
+        this.moduleName = decl.moduleName
 
-        for (f in ast.functions) {
+        for (f in decl.functions) {
             functions[f.name] = FunctionSymbol(f.name, f.args, f.returnType)
         }
 
-        for (decl in ast.functions) {
+        for (decl in decl.functions) {
             val sb: StringBuilder = StringBuilder("(")
             for (arg in decl.args) {
                 sb.append(arg.type!!.descriptor)
@@ -176,29 +160,23 @@ class Compiler() : Visitor<Void?> {
         }
 
         cw.visitEnd()
-
-        return null
     }
 
-    override fun visit(id: IdExpr): Void? {
-        var variable: VariableSymbol = env.lookupVariable(id.id)
+    override fun visit(id: IdExpr) {
+        val variable: VariableSymbol = env.lookupVariable(id.id)
         if (variable.isArgVar) {
             ga!!.loadArg(variable.id)
         } else {
             ga!!.loadLocal(variable.id)
         }
-
-        return null
     }
 
-    override fun visit(ret: ReturnExpr): Void? {
+    override fun visit(ret: ReturnExpr) {
         visit(ret.expr)
         ga!!.returnValue()
-
-        return null
     }
 
-    override fun visit(bin: BinaryExpr): Void? {
+    override fun visit(bin: BinaryExpr) {
         visit(bin.a)
         visit(bin.b)
 
@@ -209,13 +187,11 @@ class Compiler() : Visitor<Void?> {
             BinaryType.ADD -> GeneratorAdapter.ADD
             BinaryType.SUB -> GeneratorAdapter.SUB
         }, bin.type)
-
-        return null
     }
 
-    override fun visit(ifelse: IfElseExpr): Void? {
-        var end: Label = ga!!.newLabel()
-        var elseLbl: Label = ga!!.newLabel()
+    override fun visit(ifelse: IfElseExpr) {
+        val end: Label = ga!!.newLabel()
+        val elseLbl: Label = ga!!.newLabel()
 
         visit(ifelse.ifExpr)
         ga!!.ifZCmp(GeneratorAdapter.EQ, elseLbl)
@@ -226,11 +202,9 @@ class Compiler() : Visitor<Void?> {
             visit(ifelse.elseStmt!!)
         }
         ga!!.mark(end)
-
-        return null
     }
 
-    override fun visit(eqCmp: EqCmpExpr): Void? {
+    override fun visit(eqCmp: EqCmpExpr) {
         val op: Int = when(eqCmp.ec) {
             ECType.BT -> GeneratorAdapter.LE
             ECType.BE -> GeneratorAdapter.LT
@@ -251,11 +225,9 @@ class Compiler() : Visitor<Void?> {
         ga!!.mark(elseLbl)
         ga!!.push(false)
         ga!!.mark(end)
-
-        return null
     }
 
-    override fun visit(eqCmp: WhileExpr): Void? {
+    override fun visit(whileExpr: WhileExpr) {
         val lblStart: Label = ga!!.newLabel()
         val lblEnd: Label = ga!!.newLabel()
 
@@ -263,28 +235,24 @@ class Compiler() : Visitor<Void?> {
         continueQueue.push(lblStart)
 
         ga!!.mark(lblStart)
-        visit(eqCmp.condition)
+        visit(whileExpr.condition)
         ga!!.ifZCmp(GeneratorAdapter.EQ, lblEnd)
-        visit(eqCmp.statement)
+        visit(whileExpr.statement)
         ga!!.goTo(lblStart)
         ga!!.mark(lblEnd)
 
         breakQueue.pop()
         continueQueue.pop()
-
-        return null
     }
 
-    override fun visit(assignment: AssignmentExpression): Void? {
+    override fun visit(assignment: AssignmentExpression) {
         visit(assignment.value)
 
         val variable = env.lookupVariable(assignment.name)
         ga!!.storeLocal(variable.id)
-
-        return null
     }
 
-    override fun visit(forExpr: ForExpr): Void? {
+    override fun visit(forExpr: ForExpr) {
         val start: Label = ga!!.newLabel()
         val end: Label = ga!!.newLabel()
 
@@ -308,46 +276,36 @@ class Compiler() : Visitor<Void?> {
 
         breakQueue.pop()
         continueQueue.pop()
-
-        return null
     }
 
-    override fun visit(breakExpr: BreakExpr): Void? {
+    override fun visit(breakExpr: BreakExpr) {
         ga!!.goTo(breakQueue.peek())
-
-        return null
     }
 
-    override fun visit(continueExpr: ContinueExpr): Void? {
+    override fun visit(continueExpr: ContinueExpr) {
         ga!!.goTo(continueQueue.peek())
-
-        return null
     }
 
-    override fun visit(castExpr: CastExpr): Void? {
+    override fun visit(castExpr: CastExpr) {
         visit(castExpr.value)
 
         ga!!.cast(castExpr.fromAsmType, Type.getType(castExpr.toType.descriptor))
-
-        return null
     }
 
-    override fun visit(arrayGet: ArrayGetExpr): Void? {
+    override fun visit(arrayGet: ArrayGetExpr) {
         visit(arrayGet.left)
 
         val usedValue: ValueType = arrayGet.firstValue
-        for ((idx, index) in arrayGet.indexes.withIndex()) {
+        for ((_, index) in arrayGet.indexes.withIndex()) {
             ga!!.push(index)
             ga!!.arrayLoad(Type.getType(usedValue.descriptor))
 
             usedValue.dimensions -= 1
             usedValue.descriptor.replaceFirst("[", "")
         }
-
-        return null
     }
 
-    override fun visit(arrayCreate: ArrayCreateExpr): Void? {
+    override fun visit(arrayCreate: ArrayCreateExpr) {
         if (arrayCreate.indexes.size == 1) {
             ga!!.push(arrayCreate.indexes[0])
             ga!!.newArray(Type.getType(arrayCreate.type.descriptor))
@@ -359,11 +317,9 @@ class Compiler() : Visitor<Void?> {
 
             ga!!.visitMultiANewArrayInsn("[".repeat(arrayCreate.indexes.size) + arrayCreate.type.descriptor, arrayCreate.indexes.size)
         }
-
-        return null
     }
 
-    override fun visit(expr: Expr): Void? {
+    override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
             is IntExpr -> visit(expr)
@@ -390,7 +346,7 @@ class Compiler() : Visitor<Void?> {
         }
     }
 
-    public fun bytecode(): ByteArray {
+    fun bytecode(): ByteArray {
         return cw.toByteArray()
     }
 }

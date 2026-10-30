@@ -8,5 +8,4 @@ import me.felek.ast.type.ValueType;
  * @date: 27/10/2026 15:01
  */
 
-public record Arg(String name, ValueType type) {
-}
+public record Arg(String name, ValueType type) {}

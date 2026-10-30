@@ -37,9 +37,9 @@ import me.felek.fenix.utils.TypeUtils
  * @date: 27/10/2026 14:59
  */
 
-class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
-    public val functions: MutableList<FunctionDeclaration> = mutableListOf()
-    public val importMap: MutableMap<String, String> = mutableMapOf()
+class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
+    val functions: MutableList<FunctionDeclaration> = mutableListOf()
+    val importMap: MutableMap<String, String> = mutableMapOf()
 
     override fun visitUsingDeclaration(ctx: FenixParser.UsingDeclarationContext?): Expr? {
         importMap[ctx!!.STRING().text.substring(1, ctx.STRING().text.length - 1).substring(ctx.STRING().text.lastIndexOf('.'))] = ctx.STRING().text.substring(1, ctx.STRING().text.length - 1)
@@ -59,32 +59,32 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return null
     }
 
-    override fun visitArrayCreate(ctx: FenixParser.ArrayCreateContext?): Expr? {
+    override fun visitArrayCreate(ctx: FenixParser.ArrayCreateContext?): Expr {
         return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().map { it.text.toInt() }, TypeUtils.typeByName(ctx.type().text))
     }
 
-    override fun visitInt(ctx: FenixParser.IntContext?): Expr? {
+    override fun visitInt(ctx: FenixParser.IntContext?): Expr {
         return IntExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().text.toInt())
     }
 
-    override fun visitString(ctx: FenixParser.StringContext?): Expr? {
+    override fun visitString(ctx: FenixParser.StringContext?): Expr {
         return StrExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.STRING().text)
     }
 
-    override fun visitFloat(ctx: FenixParser.FloatContext?): Expr? {
+    override fun visitFloat(ctx: FenixParser.FloatContext?): Expr {
         return FloatExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.FLOAT().text.toFloat())
     }
 
-    override fun visitArrayGet(ctx: FenixParser.ArrayGetContext?): Expr? {
+    override fun visitArrayGet(ctx: FenixParser.ArrayGetContext?): Expr {
         return ArrayGetExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, ctx.INT().map { it.text.toInt() })
     }
 
-    override fun visitBool(ctx: FenixParser.BoolContext?): Expr? {
+    override fun visitBool(ctx: FenixParser.BoolContext?): Expr {
         return BoolExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.BOOL().text.toBoolean())
     }
 
-    override fun visitBlock(ctx: FenixParser.BlockContext?): Expr? {
-        var list: MutableList<Expr> = mutableListOf()
+    override fun visitBlock(ctx: FenixParser.BlockContext?): Expr {
+        val list: MutableList<Expr> = mutableListOf()
 
         for (expr in ctx!!.expr()) {
             list.add(visit(expr)!!)
@@ -93,21 +93,21 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return BlockExpr(ctx.start.line, ctx.start.charPositionInLine, list)
     }
 
-    override fun visitReturn(ctx: FenixParser.ReturnContext?): Expr? {
+    override fun visitReturn(ctx: FenixParser.ReturnContext?): Expr {
         return ReturnExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!)
     }
 
-    override fun visitAdditive(ctx: FenixParser.AdditiveContext?): Expr? {
+    override fun visitAdditive(ctx: FenixParser.AdditiveContext?): Expr {
         val bin: BinaryType = getBinaryType(ctx!!.op.text)
 
         return BinaryExpr(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, bin)
     }
 
-    override fun visitWhile(ctx: FenixParser.WhileContext?): Expr? {
+    override fun visitWhile(ctx: FenixParser.WhileContext?): Expr {
         return WhileExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, if (ctx.statement().expr() == null) visit(ctx.statement().block())!! else visit(ctx.statement().expr())!!)
     }
 
-    override fun visitIfElse(ctx: FenixParser.IfElseContext?): Expr? {
+    override fun visitIfElse(ctx: FenixParser.IfElseContext?): Expr {
         //expr0 - if condition
         //expr1 - if statement
         //expr2 - else stmt
@@ -121,7 +121,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return IfElseExpr(ctx.start.line, ctx.start.charPositionInLine, ifCondition, ifStmt, elseStmt)
     }
 
-    override fun visitEqCmp(ctx: FenixParser.EqCmpContext?): Expr? {
+    override fun visitEqCmp(ctx: FenixParser.EqCmpContext?): Expr {
         val op = when (ctx!!.op.text) {
             "!=" -> ECType.NEQ
             "==" -> ECType.EQ
@@ -134,7 +134,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return EqCmpExpr(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, op)
     }
 
-    override fun visitMultiplicative(ctx: FenixParser.MultiplicativeContext?): Expr? {
+    override fun visitMultiplicative(ctx: FenixParser.MultiplicativeContext?): Expr {
         val bin: BinaryType = getBinaryType(ctx!!.op.text)
 
         return BinaryExpr(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, bin)
@@ -150,8 +150,8 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         }
     }
 
-    override fun visitInvokeStatic(ctx: FenixParser.InvokeStaticContext?): Expr? {
-        var list: MutableList<Expr> = mutableListOf()
+    override fun visitInvokeStatic(ctx: FenixParser.InvokeStaticContext?): Expr {
+        val list: MutableList<Expr> = mutableListOf()
 
         for (expr in ctx!!.expr()) {
             list.add(visit(expr)!!)
@@ -160,19 +160,19 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return InvokeStaticExpr(ctx.start.line, ctx.start.charPositionInLine, ctx.ID(0).text, ctx.ID(1).text, list)
     }
 
-    override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr? {
+    override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr {
         return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, visit(ctx.expr())!!)
     }
 
-    override fun visitBreak(ctx: FenixParser.BreakContext?): Expr? {
+    override fun visitBreak(ctx: FenixParser.BreakContext?): Expr {
         return BreakExpr(ctx!!.start.line, ctx.start.charPositionInLine)
     }
 
-    override fun visitContinue(ctx: FenixParser.ContinueContext?): Expr? {
+    override fun visitContinue(ctx: FenixParser.ContinueContext?): Expr {
         return ContinueExpr(ctx!!.start.line, ctx.start.charPositionInLine)
     }
 
-    override fun visitCast(ctx: FenixParser.CastContext?): Expr? {
+    override fun visitCast(ctx: FenixParser.CastContext?): Expr {
         return CastExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, TypeUtils.typeByName(ctx.type().text))
     }
 
@@ -180,8 +180,8 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return ForExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.varDecl())!! as VariableDeclaration, visit(ctx.expr())!!, visit(ctx.assignmentDecl())!! as AssignmentExpression, if (ctx.statement().expr() == null) visit(ctx.statement().block())!! else visit(ctx.statement().expr())!!)
     }
 
-    override fun visitInvokeLocal(ctx: FenixParser.InvokeLocalContext?): Expr? {
-        var list: MutableList<Expr> = mutableListOf()
+    override fun visitInvokeLocal(ctx: FenixParser.InvokeLocalContext?): Expr {
+        val list: MutableList<Expr> = mutableListOf()
 
         for (expr in ctx!!.expr()) {
             list.add(visit(expr)!!)
@@ -190,15 +190,15 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr?>() {
         return InvokeLocalExpr(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list)
     }
 
-    override fun visitVarDecl(ctx: FenixParser.VarDeclContext?): Expr? {
+    override fun visitVarDecl(ctx: FenixParser.VarDeclContext?): Expr {
         return VariableDeclaration(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, ctx.CONST() != null, ctx.type()?.let { TypeUtils.typeByName(it.text) }, ctx.expr()?.let { visit(it) })
     }
 
-    override fun visitId(ctx: FenixParser.IdContext?): Expr? {
+    override fun visitId(ctx: FenixParser.IdContext?): Expr {
         return IdExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text)
     }
 
-    public fun getResult(): ASTResult {
+    fun getResult(): ASTResult {
         return ASTResult(functions, moduleName, importMap)
     }
 }

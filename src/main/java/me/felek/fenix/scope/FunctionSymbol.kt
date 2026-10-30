@@ -9,5 +9,4 @@ import me.felek.ast.type.ValueType
  * @date: 28/10/2026 14:04
  */
 
-class FunctionSymbol(var name: String, var args: List<Arg>, var returnType: ValueType) {
-}
+class FunctionSymbol(var name: String, var args: List<Arg>, var returnType: ValueType)

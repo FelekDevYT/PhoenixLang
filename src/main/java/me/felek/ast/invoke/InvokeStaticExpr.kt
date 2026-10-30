@@ -10,5 +10,5 @@ import org.objectweb.asm.commons.Method
  */
 
 class InvokeStaticExpr(line: Int, column: Int, var owner: String, var method: String, var args: List<Expr>) : Expr(line, column) {
-    public lateinit var methodImpl: java.lang.reflect.Method
+    lateinit var methodImpl: java.lang.reflect.Method
 }

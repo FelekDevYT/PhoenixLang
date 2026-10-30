@@ -9,5 +9,4 @@ import me.felek.bright.parser.FenixParser
  * @date: 29/10/2026 15:36
  */
 
-class AssignmentExpression(line: Int, column: Int, var name: String, var value: Expr) : Expr(line, column) {
-}
+class AssignmentExpression(line: Int, column: Int, var name: String, var value: Expr) : Expr(line, column)

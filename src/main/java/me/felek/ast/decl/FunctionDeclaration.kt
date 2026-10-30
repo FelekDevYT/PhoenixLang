@@ -10,5 +10,4 @@ import me.felek.ast.type.ValueType
  * @date: 27/10/2026 15:01
  */
 
-class FunctionDeclaration(line: Int, start: Int, var name: String, var args: List<Arg>, var returnType: ValueType, var body: Expr) : Node(line, start) {
-}
+class FunctionDeclaration(line: Int, start: Int, var name: String, var args: List<Arg>, var returnType: ValueType, var body: Expr) : Node(line, start)

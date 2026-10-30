@@ -8,5 +8,4 @@ import me.felek.ast.Expr
  * @date: 27/10/2026 15:03
  */
 
-class BlockExpr(line: Int, column: Int, var body: List<Expr>) : Expr(line, column) {
-}
+class BlockExpr(line: Int, column: Int, var body: List<Expr>) : Expr(line, column)

@@ -8,5 +8,4 @@ import me.felek.ast.Expr
  * @date: 29/10/2026 15:07
  */
 
-class WhileExpr(line: Int, column: Int, var condition: Expr, var statement: Expr) : Expr(line, column) {
-}
+class WhileExpr(line: Int, column: Int, var condition: Expr, var statement: Expr) : Expr(line, column)

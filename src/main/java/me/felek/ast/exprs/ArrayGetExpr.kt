@@ -10,5 +10,5 @@ import me.felek.ast.type.ValueType
  */
 
 class ArrayGetExpr(line: Int, column: Int, val left: Expr, val indexes: List<Int>) : Expr(line, column) {
-    public lateinit var firstValue: ValueType
+    lateinit var firstValue: ValueType
 }

@@ -9,7 +9,7 @@ import java.util.Objects;
  */
 
 public class ValueType {
-    private String descriptor;
+    private final String descriptor;
     private String name;
     private int dimensions = 0;//0 - not an array
 
@@ -26,10 +26,6 @@ public class ValueType {
 
     public String getDescriptor() {
         return descriptor;
-    }
-
-    public void setDescriptor(String descriptor) {
-        this.descriptor = descriptor;
     }
 
     public String getName() {

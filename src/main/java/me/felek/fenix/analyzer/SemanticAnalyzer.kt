@@ -40,7 +40,7 @@ import java.util.ArrayDeque
 
 class SemanticAnalyzer : Visitor<ValueType> {
     private lateinit var result: ASTResult
-    private var env: Environment = Environment(null);//root
+    private var env: Environment = Environment(null)//root
     private var errors: MutableList<Error> = mutableListOf()
     private var functions: MutableMap<String, FunctionSymbol> = mutableMapOf()
     private var currentFunction: FunctionSymbol? = null
@@ -83,7 +83,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             expr.methodImpl = clazz.methods.find {
                 it.name.equals(expr.method) && it.parameterCount == argTypes.size && it.parameterTypes.zip(argTypes).all { (p, a) -> p.descriptorString().equals("Ljava/lang/Object;") || TypeUtils.typeByDescriptor(p.descriptorString()) == a }
             }!!//TODO: 0x311 implementation
-        } catch (exc: ClassNotFoundException) {
+        } catch (_: ClassNotFoundException) {
             errors.add(Error(expr.line, expr.column, 0xB00, "Java class not found"))
             return ValueType.VOID
         }
@@ -167,11 +167,9 @@ class SemanticAnalyzer : Visitor<ValueType> {
         if (visit(ifelse.ifExpr) != ValueType.BOOL) {
             errors.add(Error(ifelse.line, ifelse.column, 0x203, "Non-bool condition value"))
         }
-        var output = visit(ifelse.ifStmt)
-        if(ifelse.elseStmt != null) {
-            if (visit(ifelse.elseStmt!!) != output) {
-                errors.add(Error(ifelse.line, ifelse.column, 0x401, "if and else blocks must have same types!"))
-            }
+        val output = visit(ifelse.ifStmt)
+        if(ifelse.elseStmt != null && visit(ifelse.elseStmt!!) != output) {
+            errors.add(Error(ifelse.line, ifelse.column, 0x401, "if and else blocks must have same types!"))
         }
 
         return output
@@ -195,25 +193,25 @@ class SemanticAnalyzer : Visitor<ValueType> {
             errors.add(Error(expr.line, expr.column, 0x330, "Unknown function: " + expr.method))
             return ValueType.VOID
         }
-        val func = functions.get(expr.method)!!
+        val func = functions[expr.method]
 
         for ((index, arg) in expr.args.withIndex()) {
-            if (visit(arg) != func.args[index]) {
+            if (visit(arg) != func!!.args[index]) {
                 errors.add(Error(expr.line, expr.column, 0x311, "Wrong function argument"))
             }
         }
 
-        return func.returnType
+        return func!!.returnType
     }
 
-    override fun visit(eqCmp: WhileExpr): ValueType {
-        if (visit(eqCmp.condition) != ValueType.BOOL) {
-            errors.add(Error(eqCmp.line, eqCmp.column, 0x203, "Non-bool condition"))
+    override fun visit(whileExpr: WhileExpr): ValueType {
+        if (visit(whileExpr.condition) != ValueType.BOOL) {
+            errors.add(Error(whileExpr.line, whileExpr.column, 0x203, "Non-bool condition"))
         }
 
         breakQueue.push(true)
         continueQueue.push(true)
-        val result = visit(eqCmp.statement)
+        val result = visit(whileExpr.statement)
         breakQueue.pop()
         continueQueue.pop()
 
@@ -221,7 +219,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(assignment: AssignmentExpression): ValueType {
-        var variable = env.lookupVariable(assignment.name)
+        val variable = env.lookupVariable(assignment.name)
         if (variable == null) {
             errors.add(Error(assignment.line, assignment.column, 0x120, "Unknown name"))
         }

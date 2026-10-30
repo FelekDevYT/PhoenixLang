@@ -11,5 +11,5 @@ import org.objectweb.asm.Type
  */
 
 class EqCmpExpr(line: Int, column: Int, var left: Expr, var right: Expr, var ec: ECType) : Expr(line, column) {
-    public lateinit var type: Type
+    lateinit var type: Type
 }
