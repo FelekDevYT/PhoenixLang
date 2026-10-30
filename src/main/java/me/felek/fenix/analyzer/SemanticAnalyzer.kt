@@ -226,8 +226,22 @@ class SemanticAnalyzer : Visitor<ValueType> {
         if (variable.isConst) {
             errors.add(Error(assignment.line, assignment.column, 0x110, "Constant can not be assigned"))
         }
+        val out = visit(assignment.value)
 
-        return visit(assignment.value)
+        if (assignment.indexes.isNotEmpty()) {
+            val resultArray = variable.type
+            resultArray.dimensions -= assignment.indexes.size
+            resultArray.descriptor = resultArray.descriptor.removePrefix("[".repeat(assignment.indexes.size))
+            resultArray.name = resultArray.name.removeSuffix("[]".repeat(assignment.indexes.size))
+
+            if (resultArray != out) {
+                errors.add(Error(assignment.line, assignment.column, 0x200, "Incompatible types: $resultArray and $out"))
+            }
+
+            assignment.firstValue = variable.type
+        }
+
+        return out
     }
 
     override fun visit(forExpr: ForExpr): ValueType {

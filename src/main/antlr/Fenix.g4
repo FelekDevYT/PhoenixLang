@@ -33,7 +33,7 @@ expr:
 statement: expr | block;
 block: '{' (expr ';')* '}';
 varDecl: (VAR | CONST) ID (':' type)? ('=' expr)?;
-assignmentDecl: ID '=' expr;
+assignmentDecl: (ID | ID ('[' INT ']')+) '=' expr;
 
 type: base=('Int' | 'Str' | 'Float' | 'Bool') ('[' ']')*;
 

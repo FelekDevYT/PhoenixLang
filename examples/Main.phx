@@ -1,6 +1,9 @@
 using "java.lang.IO";
 
 func main(args: Str[]) -> Str {
-    var a: Str[][][] = [15][512][51]Str;
+    var a: Int[] = [5]Int;
+    a[0] = 123;
+    var b: Int = 16;
+    b = 5;
     return args[0];
 }

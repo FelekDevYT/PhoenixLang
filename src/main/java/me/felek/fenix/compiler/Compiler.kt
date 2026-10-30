@@ -245,13 +245,6 @@ class Compiler : Visitor<Unit> {
         continueQueue.pop()
     }
 
-    override fun visit(assignment: AssignmentExpression) {
-        visit(assignment.value)
-
-        val variable = env.lookupVariable(assignment.name)
-        ga!!.storeLocal(variable.id)
-    }
-
     override fun visit(forExpr: ForExpr) {
         val start: Label = ga!!.newLabel()
         val end: Label = ga!!.newLabel()
@@ -302,6 +295,30 @@ class Compiler : Visitor<Unit> {
 
             usedValue.dimensions -= 1
             usedValue.descriptor.replaceFirst("[", "")
+        }
+    }
+
+    override fun visit(assignment: AssignmentExpression) {
+        if (assignment.indexes.isNotEmpty()) {
+            ga!!.loadLocal(env.lookupVariable(assignment.name).id)
+
+            val usedValue: ValueType = assignment.firstValue
+            for (index in 0 until assignment.indexes.size - 1) {
+                ga!!.push(index)
+                ga!!.arrayLoad(Type.getType(usedValue.descriptor))
+
+                usedValue.dimensions -= 1
+                usedValue.descriptor = usedValue.descriptor.replaceFirst("[", "")
+            }
+
+            ga!!.push(assignment.indexes.last())
+            visit(assignment.value)
+            ga!!.arrayStore(Type.getType(usedValue.descriptor.removePrefix("[")))
+        } else {
+            visit(assignment.value)
+
+            val variable = env.lookupVariable(assignment.name)
+            ga!!.storeLocal(variable.id)
         }
     }
 
