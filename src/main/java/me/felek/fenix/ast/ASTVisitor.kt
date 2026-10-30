@@ -166,7 +166,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr {
-        return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, if (ctx.INT().isEmpty()) ArrayList<Int>() else ctx.INT().map { it.text.toInt() }, visit(ctx.expr())!!)
+        return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, if (ctx.expr().isEmpty()) ArrayList() else ctx.index.map { visit(it) }, visit(ctx.right))
     }
 
     override fun visitParens(ctx: FenixParser.ParensContext?): Expr {

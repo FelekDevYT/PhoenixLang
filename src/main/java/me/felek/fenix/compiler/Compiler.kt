@@ -317,7 +317,7 @@ class Compiler : Visitor<Unit> {
                 usedValue.descriptor = usedValue.descriptor.replaceFirst("[", "")
             }
 
-            ga!!.push(assignment.indexes.last())
+            visit(assignment.indexes.last())
             visit(assignment.value)
             ga!!.arrayStore(Type.getType(usedValue.descriptor.removePrefix("[")))
         } else {

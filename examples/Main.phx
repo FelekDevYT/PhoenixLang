@@ -2,8 +2,9 @@ using "java.lang.IO";
 using "javax.swing.JFrame";
 
 func main(args: Str[]) -> Void {
+    var arr: Int[] = Int[100];
     for (var a: Int = 0; a < 100; a++) {
-        IO.println(a);
+        arr[a] = a*a;
     };
     return;
 }

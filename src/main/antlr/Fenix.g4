@@ -39,7 +39,7 @@ inccDec: ID (INC='++' | DEC='--' );
 statement: expr | block;
 block: '{' (expr ';')* '}';
 varDecl: (VAR | CONST) ID (':' type)? ('=' expr)?;
-assignmentDecl: (ID | ID ('[' INT ']')+) '=' expr;
+assignmentDecl: (ID | ID ('[' index+=expr ']')+) '=' right=expr;
 
 type: base=('Int' | 'Str' | 'Float' | 'Bool' | 'Void' | ID) ('[' ']')*;
 
