@@ -141,9 +141,11 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(ret: ReturnExpr): ValueType {
-        val real = visit(ret.expr)
-        if (real!= currentFunction!!.returnType) {
-            errors.add(Error(ret.line, ret.column, 0x322, "Wrong function return: expected $real but found ${currentFunction!!.returnType}"))
+        if (ret.expr != null) {
+            val real = visit(ret.expr!!)
+            if (real!= currentFunction!!.returnType) {
+                errors.add(Error(ret.line, ret.column, 0x322, "Wrong function return: expected $real but found ${currentFunction!!.returnType}"))
+            }
         }
         return ValueType.VOID
     }

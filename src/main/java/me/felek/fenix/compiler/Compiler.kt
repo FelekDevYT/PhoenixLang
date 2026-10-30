@@ -176,7 +176,9 @@ class Compiler : Visitor<Unit> {
     }
 
     override fun visit(ret: ReturnExpr) {
-        visit(ret.expr)
+        if (ret.expr != null) {
+            visit(ret.expr!!)
+        }
         ga!!.returnValue()
     }
 

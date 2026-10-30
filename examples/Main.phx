@@ -1,11 +1,9 @@
 using "java.lang.IO";
 using "javax.swing.JFrame";
 
-func main(args: Str[]) -> Int {
-    var a: Int[] = Int[5];
-    a[1] = 125;
-    a[0] = 641;
-
-    var b: Str[][] = Str[154][51];
-    return -5;
+func main(args: Str[]) -> Void {
+    for (var a: Int = 0; a < 100; a++) {
+        IO.println(a);
+    };
+    return;
 }

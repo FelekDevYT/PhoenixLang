@@ -22,11 +22,11 @@ expr:
     | ID '.' ID '(' (expr (',' expr)*)? ')' #InvokeStatic
     | ID '(' (expr (',' expr)*)? ')'        #InvokeLocal
     | 'while' '('? expr ')'? statement      #While
-    | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
+    | 'for' '('? varDecl? ';' expr ';' (assignmentDecl | inccDec)')'? statement #For
     | left=expr ('[' expr ']')+             #ArrayGet
     | type ('[' expr ']')+                  #ArrayCreate//Int[12][61]
     | 'new' ID '(' (expr (',' expr)*)? ')'  #New
-    | ID (INC='++' | DEC='--' )             #IncDec
+    | inccDec                               #IncDec
     | assignmentDecl                        #Assignment
     | 'break'                               #Break
     | 'continue'                            #Continue
@@ -35,12 +35,13 @@ expr:
     | 'return' expr?                        #Return
     ;
 
+inccDec: ID (INC='++' | DEC='--' );
 statement: expr | block;
 block: '{' (expr ';')* '}';
 varDecl: (VAR | CONST) ID (':' type)? ('=' expr)?;
 assignmentDecl: (ID | ID ('[' INT ']')+) '=' expr;
 
-type: base=('Int' | 'Str' | 'Float' | 'Bool' | ID) ('[' ']')*;
+type: base=('Int' | 'Str' | 'Float' | 'Bool' | 'Void' | ID) ('[' ']')*;
 
 VAR: 'var';
 CONST: 'const';
