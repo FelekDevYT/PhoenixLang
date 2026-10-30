@@ -1,5 +1,5 @@
 using "java.lang.IO";
 
 func main(args: Str[]) -> Int {
-    return (5 + 6) * 2;
+    return -2;
 }

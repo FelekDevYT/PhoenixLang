@@ -18,6 +18,8 @@ import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IntExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
+import me.felek.ast.exprs.UnaryMinusExpr
+import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
@@ -324,6 +326,27 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return ValueType("[".repeat(arrayCreate.indexes.size) + arrayCreate.type.descriptor, arrayCreate.type.name + "[]".repeat(arrayCreate.indexes.size), arrayCreate.indexes.size)
     }
 
+    override fun visit(unary: UnaryMinusExpr): ValueType {
+        val type = visit(unary.expr)
+
+        if (!(type == ValueType.INT || type == ValueType.FLOAT)) {
+            errors.add(Error(unary.line, unary.column, 0x201, "Unary minus only can be applied to Int and Float"))
+        }
+        unary.type = type
+
+        return type
+    }
+
+    override fun visit(unary: UnaryNotExpr): ValueType {
+        val type = visit(unary.expr)
+
+        if (type != ValueType.BOOL) {
+            errors.add(Error(unary.line, unary.column, 0x201, "Not only can be applied to boolean"))
+        }
+
+        return type
+    }
+
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -347,6 +370,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is CastExpr -> visit(expr)
             is ArrayGetExpr -> visit(expr)
             is ArrayCreateExpr -> visit(expr)
+            is UnaryNotExpr -> visit(expr)
+            is UnaryMinusExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

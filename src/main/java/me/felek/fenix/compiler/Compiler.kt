@@ -18,6 +18,8 @@ import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IntExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
+import me.felek.ast.exprs.UnaryMinusExpr
+import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
@@ -336,6 +338,21 @@ class Compiler : Visitor<Unit> {
         }
     }
 
+    override fun visit(unary: UnaryNotExpr) {
+        visit(unary.expr)
+        ga!!.not()
+    }
+
+    override fun visit(unary: UnaryMinusExpr) {
+        visit(unary.expr)
+
+        if (unary.type == ValueType.INT) {
+            ga!!.visitInsn(INEG)
+        } else {
+            ga!!.visitInsn(FNEG)
+        }
+    }
+
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -359,6 +376,8 @@ class Compiler : Visitor<Unit> {
             is CastExpr -> visit(expr)
             is ArrayGetExpr -> visit(expr)
             is ArrayCreateExpr -> visit(expr)
+            is UnaryNotExpr -> visit(expr)
+            is UnaryMinusExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

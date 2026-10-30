@@ -15,6 +15,8 @@ expr:
     | STRING                                #String
     | FLOAT                                 #Float
     | BOOL                                  #Bool
+    | '-' expr                              #UnaryMinus
+    | '!' expr                              #Not
     | expr op=('==' | '!=' | '>=' | '<=' | '>' | '<') expr #EqCmp
     | 'if' '('? expr ')'? statement ('else' statement)? #IfElse
     | ID '.' ID '(' (expr (',' expr)*)? ')' #InvokeStatic
@@ -22,7 +24,7 @@ expr:
     | 'while' '('? expr ')'? statement      #While
     | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
     | expr ('[' INT ']')+                   #ArrayGet
-    | ('[' INT ']')+ type                   #ArrayCreate//[12][61]Int
+    | type ('[' INT ']')+                   #ArrayCreate//Int[12][61]
     | assignmentDecl                        #Assignment
     | 'break'                               #Break
     | 'continue'                            #Continue
