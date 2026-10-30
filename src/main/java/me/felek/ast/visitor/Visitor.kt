@@ -15,6 +15,7 @@ import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
+import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
@@ -61,6 +62,7 @@ interface Visitor<T> {
     fun visit(arrayCreate: ArrayCreateExpr): T
     fun visit(unary: UnaryNotExpr): T
     fun visit(unary: UnaryMinusExpr): T
+    fun visit(inc: IncDecExpr): T
 
     fun visit(expr: Expr): T
     fun visit(decl: ASTResult): T

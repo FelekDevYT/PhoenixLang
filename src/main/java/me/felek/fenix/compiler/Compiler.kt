@@ -15,6 +15,7 @@ import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
+import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
@@ -353,6 +354,15 @@ class Compiler : Visitor<Unit> {
         }
     }
 
+    override fun visit(inc: IncDecExpr) {
+        val variable = env.lookupVariable(inc.varName)
+        if (inc.isIncrement) {
+            ga!!.iinc(variable.id, 1)
+        } else {
+            ga!!.iinc(variable.id, -1)
+        }
+    }
+
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -378,6 +388,7 @@ class Compiler : Visitor<Unit> {
             is ArrayCreateExpr -> visit(expr)
             is UnaryNotExpr -> visit(expr)
             is UnaryMinusExpr -> visit(expr)
+            is IncDecExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

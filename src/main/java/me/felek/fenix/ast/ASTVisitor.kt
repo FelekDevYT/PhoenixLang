@@ -17,6 +17,7 @@ import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
+import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
@@ -172,6 +173,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
 
     override fun visitUnaryMinus(ctx: FenixParser.UnaryMinusContext?): Expr {
         return UnaryMinusExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr()))
+    }
+
+    override fun visitIncDec(ctx: FenixParser.IncDecContext?): Expr? {
+        return IncDecExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, ctx.DEC == null)
     }
 
     override fun visitNot(ctx: FenixParser.NotContext?): Expr {

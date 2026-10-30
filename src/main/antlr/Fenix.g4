@@ -25,6 +25,7 @@ expr:
     | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
     | expr ('[' INT ']')+                   #ArrayGet
     | type ('[' INT ']')+                   #ArrayCreate//Int[12][61]
+    | ID (INC='++' | DEC='--' )             #IncDec
     | assignmentDecl                        #Assignment
     | 'break'                               #Break
     | 'continue'                            #Continue

@@ -15,6 +15,7 @@ import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
+import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
@@ -246,6 +247,19 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return out
     }
 
+    override fun visit(inc: IncDecExpr): ValueType {
+        val variable = env.lookupVariable(inc.varName)
+        if (variable == null) {
+            errors.add(Error(inc.line, inc.column, 0x120, "Unknown name"))
+        }
+
+        if (variable.type != ValueType.INT && variable.type != ValueType.FLOAT) {
+            errors.add(Error(inc.line, inc.column, 0x201, "Increment only can be applied to Int or Float"))
+        }
+
+        return variable.type
+    }
+
     override fun visit(forExpr: ForExpr): ValueType {
         breakQueue.push(true)
         continueQueue.push(true)
@@ -346,7 +360,6 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
         return type
     }
-
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -372,6 +385,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is ArrayCreateExpr -> visit(expr)
             is UnaryNotExpr -> visit(expr)
             is UnaryMinusExpr -> visit(expr)
+            is IncDecExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID
