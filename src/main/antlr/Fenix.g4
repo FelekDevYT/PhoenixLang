@@ -23,8 +23,8 @@ expr:
     | ID '(' (expr (',' expr)*)? ')'        #InvokeLocal
     | 'while' '('? expr ')'? statement      #While
     | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
-    | expr ('[' INT ']')+                   #ArrayGet
-    | type ('[' INT ']')+                   #ArrayCreate//Int[12][61]
+    | left=expr ('[' expr ']')+             #ArrayGet
+    | type ('[' expr ']')+                  #ArrayCreate//Int[12][61]
     | 'new' ID '(' (expr (',' expr)*)? ')'  #New
     | ID (INC='++' | DEC='--' )             #IncDec
     | assignmentDecl                        #Assignment

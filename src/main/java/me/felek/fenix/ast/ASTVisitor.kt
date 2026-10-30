@@ -65,7 +65,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitArrayCreate(ctx: FenixParser.ArrayCreateContext?): Expr {
-        return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().map { it.text.toInt() }, TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)))
+        return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.expr().map { visit(it) }, TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)))
     }
 
     override fun visitInt(ctx: FenixParser.IntContext?): Expr {
@@ -81,7 +81,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitArrayGet(ctx: FenixParser.ArrayGetContext?): Expr {
-        return ArrayGetExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, ctx.INT().map { it.text.toInt() })
+        return ArrayGetExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.left), ctx.expr().map { visit(it) })
     }
 
     override fun visitBool(ctx: FenixParser.BoolContext?): Expr {

@@ -294,7 +294,7 @@ class Compiler : Visitor<Unit> {
 
         val usedValue: ValueType = arrayGet.firstValue
         for ((_, index) in arrayGet.indexes.withIndex()) {
-            ga!!.push(index)
+            visit(index)
             ga!!.arrayLoad(Type.getType(usedValue.descriptor))
 
             usedValue.dimensions -= 1
@@ -328,12 +328,12 @@ class Compiler : Visitor<Unit> {
 
     override fun visit(arrayCreate: ArrayCreateExpr) {
         if (arrayCreate.indexes.size == 1) {
-            ga!!.push(arrayCreate.indexes[0])
+            visit(arrayCreate.indexes[0])
             ga!!.newArray(Type.getType(arrayCreate.type.descriptor))
         } else {
             //>=1
             for (index in arrayCreate.indexes) {
-                ga!!.push(index)
+                visit(index)
             }
 
             ga!!.visitMultiANewArrayInsn("[".repeat(arrayCreate.indexes.size) + arrayCreate.type.descriptor, arrayCreate.indexes.size)

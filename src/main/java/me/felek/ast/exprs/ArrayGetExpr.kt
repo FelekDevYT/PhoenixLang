@@ -9,6 +9,6 @@ import me.felek.ast.type.ValueType
  * @date: 29/10/2026 19:55
  */
 
-class ArrayGetExpr(line: Int, column: Int, val left: Expr, val indexes: List<Int>) : Expr(line, column) {
+class ArrayGetExpr(line: Int, column: Int, val left: Expr, val indexes: List<Expr>) : Expr(line, column) {
     lateinit var firstValue: ValueType
 }

@@ -234,13 +234,11 @@ class SemanticAnalyzer : Visitor<ValueType> {
         val out = visit(assignment.value)
 
         if (assignment.indexes.isNotEmpty()) {
-            val resultArray = variable.type
-            resultArray.dimensions -= assignment.indexes.size
-            resultArray.descriptor = resultArray.descriptor.removePrefix("[".repeat(assignment.indexes.size))
-            resultArray.name = resultArray.name.removeSuffix("[]".repeat(assignment.indexes.size))
+            val varType = variable.type
+            val result = ValueType(varType.descriptor.removePrefix("[".repeat(assignment.indexes.size)), varType.name.removeSuffix("[]".repeat(assignment.indexes.size)),varType.dimensions - assignment.indexes.size)
 
-            if (resultArray != out) {
-                errors.add(Error(assignment.line, assignment.column, 0x200, "Incompatible types: $resultArray and $out"))
+            if (result != out) {
+                errors.add(Error(assignment.line, assignment.column, 0x200, "Incompatible types: $result and $out"))
             }
 
             assignment.firstValue = variable.type
@@ -334,8 +332,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(arrayCreate: ArrayCreateExpr): ValueType {
         for (el in arrayCreate.indexes) {
-            if (el < 0) {
-                errors.add(Error(arrayCreate.line, arrayCreate.column, 0x516, "Negative array index"))
+            if (visit(el) != ValueType.INT) {
+                errors.add(Error(arrayCreate.line, arrayCreate.column, 0x516, "Non-int array index"))
             }
         }
 
