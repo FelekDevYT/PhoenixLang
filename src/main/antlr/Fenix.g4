@@ -7,7 +7,8 @@ functionDeclaration: 'func' ID '(' (arg (',' arg)*)? ')' ('->' type)? (block | '
 arg: ID ':' type;
 
 expr:
-      expr op=('/' | '*' | '%') expr        #Multiplicative
+      '(' expr ')'                          #Parens
+    | expr op=('/' | '*' | '%') expr        #Multiplicative
     | expr op=('+' | '-') expr              #Additive
     | ID                                    #Id
     | INT                                   #Int
