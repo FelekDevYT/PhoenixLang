@@ -19,6 +19,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
@@ -32,6 +33,7 @@ import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.bright.parser.FenixBaseVisitor
 import me.felek.bright.parser.FenixParser
+import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 
 /**
@@ -54,16 +56,16 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         val list: MutableList<Arg> = mutableListOf()
 
         for (arg in ctx!!.arg()) {
-            list.add(Arg(arg.ID().text, TypeUtils.typeByName(arg.type().text)))
+            list.add(Arg(arg.ID().text, TypeUtils.typeByName(OtherUtils.resolveImport(arg.type().text, importMap))))
         }
 
-        functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(ctx.type().text), if (ctx.block() == null) visit(ctx.expr())!! else visit(ctx.block())!!))
+        functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)), if (ctx.block() == null) visit(ctx.expr())!! else visit(ctx.block())!!))
 
         return null
     }
 
     override fun visitArrayCreate(ctx: FenixParser.ArrayCreateContext?): Expr {
-        return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().map { it.text.toInt() }, TypeUtils.typeByName(ctx.type().text))
+        return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().map { it.text.toInt() }, TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)))
     }
 
     override fun visitInt(ctx: FenixParser.IntContext?): Expr {
@@ -71,7 +73,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitString(ctx: FenixParser.StringContext?): Expr {
-        return StrExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.STRING().text)
+        return StrExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.STRING().text.substring(1, ctx.STRING().text.length - 1))
     }
 
     override fun visitFloat(ctx: FenixParser.FloatContext?): Expr {
@@ -175,8 +177,12 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         return UnaryMinusExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr()))
     }
 
-    override fun visitIncDec(ctx: FenixParser.IncDecContext?): Expr? {
+    override fun visitIncDec(ctx: FenixParser.IncDecContext?): Expr {
         return IncDecExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, ctx.DEC == null)
+    }
+
+    override fun visitNew(ctx: FenixParser.NewContext?): Expr {
+        return NewExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, ctx.expr().map { visit(it) })
     }
 
     override fun visitNot(ctx: FenixParser.NotContext?): Expr {
@@ -192,7 +198,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitCast(ctx: FenixParser.CastContext?): Expr {
-        return CastExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, TypeUtils.typeByName(ctx.type().text))
+        return CastExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)))
     }
 
     override fun visitFor(ctx: FenixParser.ForContext?): Expr {

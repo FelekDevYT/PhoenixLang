@@ -17,6 +17,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
@@ -84,7 +85,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             val clazz = Class.forName(OtherUtils.resolveImport(expr.owner, result.importMap))
             val argTypes = expr.args.map { visit(it) }
             expr.methodImpl = clazz.methods.find {
-                it.name.equals(expr.method) && it.parameterCount == argTypes.size && it.parameterTypes.zip(argTypes).all { (p, a) -> p.descriptorString().equals("Ljava/lang/Object;") || TypeUtils.typeByDescriptor(p.descriptorString()) == a }
+                it.name == expr.method && it.parameterCount == argTypes.size && it.parameterTypes.zip(argTypes).all { (p, a) -> p.descriptorString().equals("Ljava/lang/Object;") || TypeUtils.typeByDescriptor(p.descriptorString()) == a }
             }!!//TODO: 0x311 implementation
         } catch (_: ClassNotFoundException) {
             errors.add(Error(expr.line, expr.column, 0xB00, "Java class not found"))
@@ -96,12 +97,12 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(varDecl: VariableDeclaration): ValueType {
         if (varDecl.value == null && varDecl.type == null) {
-            if (!varDecl.isConst) {
+            return if (!varDecl.isConst) {
                 errors.add(Error(varDecl.line, varDecl.column, 0x101, "Variable without initializer"))
-                return ValueType.VOID
+                ValueType.VOID
             } else {
                 errors.add(Error(varDecl.line, varDecl.column, 0x100, "Constant without initializer"))
-                return ValueType.VOID
+                ValueType.VOID
             }
         }
 
@@ -114,6 +115,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
         if (varDecl.type == null) {
             varDecl.type = type
         } else {
+            varDecl.type = resolveType(varDecl.type!!)
             if (varDecl.type != type) {
                 errors.add(Error(varDecl.line, varDecl.column, 0x200, "Incompatible types: ${varDecl.type} and $type"))
             }
@@ -337,7 +339,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             }
         }
 
-        return ValueType("[".repeat(arrayCreate.indexes.size) + arrayCreate.type.descriptor, arrayCreate.type.name + "[]".repeat(arrayCreate.indexes.size), arrayCreate.indexes.size)
+        return ValueType("[".repeat(arrayCreate.indexes.size) + resolveType(arrayCreate.type).descriptor, resolveType(arrayCreate.type).name + "[]".repeat(arrayCreate.indexes.size), arrayCreate.indexes.size)
     }
 
     override fun visit(unary: UnaryMinusExpr): ValueType {
@@ -360,6 +362,29 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
         return type
     }
+
+    override fun visit(new: NewExpr): ValueType {
+        try {
+            val clazz: Class<*> = Class.forName(OtherUtils.resolveImport(new.owner, result.importMap))
+            new.clazz = clazz
+
+            val descriptor: StringBuilder = StringBuilder("(")
+            for (arg in new.args) {
+                descriptor.append(visit(arg).descriptor)
+            }
+            descriptor.append(")")
+            descriptor.append("V")
+
+            new.constructorDescriptor = descriptor.toString()
+
+            return TypeUtils.typeByDescriptor(clazz.descriptorString())
+        } catch (_: ClassNotFoundException) {
+            errors.add(Error(new.line, new.column, 0xB00, "Java class not found"))
+        }
+
+        return ValueType.VOID
+    }
+
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -386,6 +411,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is UnaryNotExpr -> visit(expr)
             is UnaryMinusExpr -> visit(expr)
             is IncDecExpr -> visit(expr)
+            is NewExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID
@@ -397,18 +423,23 @@ class SemanticAnalyzer : Visitor<ValueType> {
         result = decl
 
         for (f in decl.functions) {
+            f.returnType = resolveType(f.returnType)
+            for (arg in f.args) {
+                arg.type = resolveType(arg.type)
+            }
+
             if (functions.containsKey(f.name)) {
                 errors.add(Error(f.line, f.column, 0x300, "Double function declaration"))
                 continue
             }
 
             val usedNames: MutableList<String> = mutableListOf()
-            for (arg in f.args) {
-                if (usedNames.contains(arg.name)) {
+            for ((name) in f.args) {
+                if (usedNames.contains(name)) {
                     errors.add(Error(f.line, f.column, 0x301, "Double function argument name"))
                     continue
                 }
-                usedNames.add(arg.name)
+                usedNames.add(name)
             }
 
             functions[f.name] = FunctionSymbol(f.name, f.args, f.returnType)
@@ -418,8 +449,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
             val temp: Environment = env
             env = Environment(env)
 
-            for (arg in f.args) {
-                env.defineVariable(arg.name, arg.type, true)
+            for ((name, type) in f.args) {
+                env.defineVariable(name, type, true)
             }
 
             currentFunction = FunctionSymbol(f.name, f.args, f.returnType)
@@ -437,5 +468,20 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     fun getErrors(): List<Error> {
         return errors
+    }
+
+    private fun resolveType(type: ValueType): ValueType {
+        val base = type.descriptor.removePrefix("[".repeat(type.dimensions))
+        if (!base.startsWith("L") || base == "Ljava/lang/String;") {
+            return type
+        }
+
+        val desc = base.substring(1, base.length - 1).replace("/", ".")
+        val value = if (desc.contains(".")) desc else OtherUtils.resolveImport(desc, result.importMap)
+        if (desc == value) {
+            return type
+        }
+
+        return ValueType("[".repeat(type.dimensions) + "L${value.replace(".", "/")};", value + "[]".repeat(type.dimensions), type.dimensions)
     }
 }

@@ -20,7 +20,12 @@ object TypeUtils {
             "Bool" -> ValueType.BOOL
             "Str" -> ValueType.STRING
             "Void" -> ValueType.VOID
-            else -> throw UndefinedTypeException(nm)
+            else -> {
+                if (nm.isBlank()) {
+                    throw UndefinedTypeException(name)
+                }
+                ValueType("L${nm.replace(".", "/")};", nm, 0)
+            }
         }
 
         return ValueType("[".repeat(arr) + base.descriptor, base.name + "[]".repeat(arr), arr)
@@ -31,12 +36,13 @@ object TypeUtils {
         val dims = descriptor.count { it == '[' }
         val des = descriptor.replace("[", "")
 
-        val base: ValueType = when (des) {
-            "I" -> ValueType.INT
-            "F"-> ValueType.FLOAT
-            "Z" -> ValueType.BOOL
-            "V" -> ValueType.VOID
-            "Ljava/lang/String;" -> ValueType.STRING
+        val base: ValueType = when {
+            des == "I" -> ValueType.INT
+            des == "F"-> ValueType.FLOAT
+            des == "Z" -> ValueType.BOOL
+            des == "V" -> ValueType.VOID
+            des == "Ljava/lang/String;" -> ValueType.STRING
+            des.startsWith("L") && des.endsWith(";") -> ValueType(des, des.substring(1, des.length - 1).replace("/", "."), 0)
             else -> throw RuntimeException("Unknown type: $descriptor")
         }
 

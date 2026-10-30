@@ -25,6 +25,7 @@ expr:
     | 'for' '('? varDecl? ';' expr ';' assignmentDecl ')'? statement #For
     | expr ('[' INT ']')+                   #ArrayGet
     | type ('[' INT ']')+                   #ArrayCreate//Int[12][61]
+    | 'new' ID '(' (expr (',' expr)*)? ')'  #New
     | ID (INC='++' | DEC='--' )             #IncDec
     | assignmentDecl                        #Assignment
     | 'break'                               #Break
@@ -39,7 +40,7 @@ block: '{' (expr ';')* '}';
 varDecl: (VAR | CONST) ID (':' type)? ('=' expr)?;
 assignmentDecl: (ID | ID ('[' INT ']')+) '=' expr;
 
-type: base=('Int' | 'Str' | 'Float' | 'Bool') ('[' ']')*;
+type: base=('Int' | 'Str' | 'Float' | 'Bool' | ID) ('[' ']')*;
 
 VAR: 'var';
 CONST: 'const';

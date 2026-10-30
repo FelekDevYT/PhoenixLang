@@ -17,6 +17,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
@@ -363,6 +364,17 @@ class Compiler : Visitor<Unit> {
         }
     }
 
+    override fun visit(new: NewExpr) {
+        ga!!.newInstance(Type.getType(new.clazz))
+        ga!!.visitInsn(DUP)
+
+        for (arg in new.args) {
+            visit(arg)
+        }
+
+        ga!!.invokeConstructor(Type.getType(new.clazz), Method("<init>", new.constructorDescriptor))
+    }
+
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -389,6 +401,7 @@ class Compiler : Visitor<Unit> {
             is UnaryNotExpr -> visit(expr)
             is UnaryMinusExpr -> visit(expr)
             is IncDecExpr -> visit(expr)
+            is NewExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }
