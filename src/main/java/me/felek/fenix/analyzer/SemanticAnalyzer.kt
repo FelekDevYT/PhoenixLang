@@ -17,6 +17,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
@@ -35,6 +36,7 @@ import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 import org.objectweb.asm.Type
 import java.util.ArrayDeque
+import kotlin.math.log
 
 /**
  * @className: SemanticAnalyzer
@@ -385,6 +387,17 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return ValueType.VOID
     }
 
+    override fun visit(logic: LogicExpr): ValueType {
+        val left = visit(logic.left)
+        val right = visit(logic.right)
+
+        if (left != ValueType.BOOL || right != ValueType.BOOL) {
+            errors.add(Error(logic.line, logic.column, 0x201, "Logic operators only can be applied to boolean values"))
+        }
+
+        return ValueType.BOOL
+    }
+
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -412,6 +425,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is UnaryMinusExpr -> visit(expr)
             is IncDecExpr -> visit(expr)
             is NewExpr -> visit(expr)
+            is LogicExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

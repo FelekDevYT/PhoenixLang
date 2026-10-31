@@ -1,10 +1,9 @@
-using "java.lang.IO";
-using "javax.swing.JFrame";
+using "java.lang.Math";
 
-func main(args: Str[]) -> Void {
+func main(args: Str[]) -> Int {
     var arr: Int[] = Int[100];
-    for (var a: Int = 0; a < 100; a++) {
-        arr[a] = a*a;
+    if (arr[0] == arr[1] && arr[12] == arr[54]) {
+        return Math.abs(-12);
     };
-    return;
+    return -12;
 }

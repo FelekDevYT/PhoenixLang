@@ -19,6 +19,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
@@ -27,6 +28,7 @@ import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
+import me.felek.ast.exprs.util.Logic
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.loop.WhileExpr
@@ -81,7 +83,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitArrayGet(ctx: FenixParser.ArrayGetContext?): Expr {
-        return ArrayGetExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.left), ctx.expr().map { visit(it) })
+        return ArrayGetExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.left), ctx.main.map { visit(it) })
     }
 
     override fun visitBool(ctx: FenixParser.BoolContext?): Expr {
@@ -167,6 +169,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
 
     override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr {
         return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, if (ctx.expr().isEmpty()) ArrayList() else ctx.index.map { visit(it) }, visit(ctx.right))
+    }
+
+    override fun visitLogic(ctx: FenixParser.LogicContext?): Expr? {
+        return LogicExpr(ctx!!.start.line, ctx.start.charPositionInLine, if (ctx.op.text == "&&") Logic.AND else if (ctx.op.text == "^") Logic.XOR else Logic.OR, visit(ctx.expr(0)), visit(ctx.expr(1)))
     }
 
     override fun visitParens(ctx: FenixParser.ParensContext?): Expr {

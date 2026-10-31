@@ -17,6 +17,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.StrExpr
@@ -25,6 +26,7 @@ import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
+import me.felek.ast.exprs.util.Logic
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.loop.WhileExpr
@@ -294,37 +296,30 @@ class Compiler : Visitor<Unit> {
     override fun visit(arrayGet: ArrayGetExpr) {
         visit(arrayGet.left)
 
-        val usedValue: ValueType = arrayGet.firstValue
-        for ((_, index) in arrayGet.indexes.withIndex()) {
+        var desc = arrayGet.firstValue.descriptor
+        for (index in arrayGet.indexes) {
             visit(index)
-            ga!!.arrayLoad(Type.getType(usedValue.descriptor))
-
-            usedValue.dimensions -= 1
-            usedValue.descriptor.replaceFirst("[", "")
+            ga!!.arrayLoad(Type.getType(desc.removePrefix("[")))
+            desc = desc.removePrefix("[")
         }
     }
 
     override fun visit(assignment: AssignmentExpression) {
         if (assignment.indexes.isNotEmpty()) {
             ga!!.loadLocal(env.lookupVariable(assignment.name).id)
-
-            val usedValue: ValueType = assignment.firstValue
-            for (index in 0 until assignment.indexes.size - 1) {
-                ga!!.push(index)
-                ga!!.arrayLoad(Type.getType(usedValue.descriptor))
-
-                usedValue.dimensions -= 1
-                usedValue.descriptor = usedValue.descriptor.replaceFirst("[", "")
+            var desc = assignment.firstValue.descriptor
+            for (i in 0 until assignment.indexes.size - 1) {
+                visit(assignment.indexes[i])
+                ga!!.arrayLoad(Type.getType(desc.removePrefix("[")))
+                desc = desc.removePrefix("[")
             }
 
             visit(assignment.indexes.last())
             visit(assignment.value)
-            ga!!.arrayStore(Type.getType(usedValue.descriptor.removePrefix("[")))
+            ga!!.arrayStore(Type.getType(desc.removePrefix("[")))
         } else {
             visit(assignment.value)
-
-            val variable = env.lookupVariable(assignment.name)
-            ga!!.storeLocal(variable.id)
+            ga!!.storeLocal(env.lookupVariable(assignment.name).id)
         }
     }
 
@@ -377,6 +372,52 @@ class Compiler : Visitor<Unit> {
         ga!!.invokeConstructor(Type.getType(new.clazz), Method("<init>", new.constructorDescriptor))
     }
 
+    override fun visit(logic: LogicExpr) {
+        when (logic.op) {
+            Logic.OR -> {
+                val end: Label = ga!!.newLabel()
+                val trueLbl: Label = ga!!.newLabel()
+
+                visit(logic.left)
+                ga!!.ifZCmp(GeneratorAdapter.NE, trueLbl)
+                visit(logic.right)
+                ga!!.ifZCmp(GeneratorAdapter.NE, trueLbl)
+                ga!!.push(false)
+                ga!!.goTo(end)
+                ga!!.mark(trueLbl)
+                ga!!.push(true)
+                ga!!.mark(end)
+            }
+            Logic.AND -> {
+                val end: Label = ga!!.newLabel()
+                val falseLbl: Label = ga!!.newLabel()
+
+                visit(logic.left)
+                ga!!.ifZCmp(GeneratorAdapter.EQ, falseLbl)
+                visit(logic.right)
+                ga!!.ifZCmp(GeneratorAdapter.EQ, falseLbl)
+                ga!!.push(true)
+                ga!!.goTo(end)
+                ga!!.mark(falseLbl)
+                ga!!.push(false)
+                ga!!.mark(end)
+            }
+            Logic.XOR -> {
+                val end: Label = ga!!.newLabel()
+                val falseLbl: Label = ga!!.newLabel()
+
+                visit(logic.left)
+                visit(logic.right)
+                ga!!.ifCmp(Type.getType(ValueType.BOOL.descriptor), GeneratorAdapter.NE, falseLbl)
+                ga!!.push(false)
+                ga!!.goTo(end)
+                ga!!.mark(falseLbl)
+                ga!!.push(true)
+                ga!!.mark(end)
+            }
+        }
+    }
+
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -404,6 +445,7 @@ class Compiler : Visitor<Unit> {
             is UnaryMinusExpr -> visit(expr)
             is IncDecExpr -> visit(expr)
             is NewExpr -> visit(expr)
+            is LogicExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }
