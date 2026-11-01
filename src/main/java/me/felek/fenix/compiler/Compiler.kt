@@ -17,6 +17,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
@@ -418,6 +419,11 @@ class Compiler : Visitor<Unit> {
         }
     }
 
+    override fun visit(logic: IsExpr) {
+        visit(logic.left)
+        ga!!.instanceOf(Type.getType(logic.isType.descriptor))
+    }
+
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -446,6 +452,7 @@ class Compiler : Visitor<Unit> {
             is IncDecExpr -> visit(expr)
             is NewExpr -> visit(expr)
             is LogicExpr -> visit(expr)
+            is IsExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

@@ -17,6 +17,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
@@ -67,6 +68,7 @@ interface Visitor<T> {
     fun visit(inc: IncDecExpr): T
     fun visit(new: NewExpr): T
     fun visit(logic: LogicExpr): T
+    fun visit(logic: IsExpr): T
 
     fun visit(expr: Expr): T
     fun visit(decl: ASTResult): T

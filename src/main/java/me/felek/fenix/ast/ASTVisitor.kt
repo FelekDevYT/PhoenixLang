@@ -19,6 +19,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
@@ -66,8 +67,8 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         return null
     }
 
-    override fun visitArrayCreate(ctx: FenixParser.ArrayCreateContext?): Expr {
-        return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.expr().map { visit(it) }, TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)))
+    override fun visitArrayNewCreate(ctx: FenixParser.ArrayNewCreateContext?): Expr? {
+        return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.expr().map { visit(it) }, TypeUtils.typeByName(OtherUtils.resolveImport(if (ctx.ID() == null) ctx.primitiveType().text else ctx.ID().text, importMap)))
     }
 
     override fun visitInt(ctx: FenixParser.IntContext?): Expr {
@@ -108,6 +109,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         val bin: BinaryType = getBinaryType(ctx!!.op.text)
 
         return BinaryExpr(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, bin)
+    }
+
+    override fun visitIs(ctx: FenixParser.IsContext?): Expr? {
+        return IsExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr()), TypeUtils.typeByName(ctx.type().text))
     }
 
     override fun visitWhile(ctx: FenixParser.WhileContext?): Expr {

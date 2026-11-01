@@ -1,9 +1,6 @@
 using "java.lang.Math";
 
 func main(args: Str[]) -> Int {
-    var arr: Int[] = Int[100];
-    if (arr[0] == arr[1] && arr[12] == arr[54]) {
-        return Math.abs(-12);
-    };
+    var a: Math[][] = new Math[5][10];
     return -12;
 }

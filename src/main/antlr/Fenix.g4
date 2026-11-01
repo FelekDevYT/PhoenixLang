@@ -12,8 +12,9 @@ expr:
       | STRING                                #String
       | FLOAT                                 #Float
       | BOOL                                  #Bool
+      | expr 'is' type                        #Is
       | left=expr ('[' main+=expr ']')+       #ArrayGet
-      | type ('[' expr ']')+                  #ArrayCreate
+      | 'new' (ID | primitiveType) ('[' expr ']')+ #ArrayNewCreate
       | 'new' ID '(' (expr (',' expr)*)? ')'  #New
       | ID '.' ID '(' (expr (',' expr)*)? ')' #InvokeStatic
       | ID '(' (expr (',' expr)*)? ')'        #InvokeLocal
@@ -43,6 +44,7 @@ varDecl: (VAR | CONST) ID (':' type)? ('=' expr)?;
 assignmentDecl: (ID | ID ('[' index+=expr ']')+) '=' right=expr;
 
 type: base=('Int' | 'Str' | 'Float' | 'Bool' | 'Void' | ID) ('[' ']')*;
+primitiveType: 'Int' | 'Str' | 'Float' | 'Bool';
 
 VAR: 'var';
 CONST: 'const';

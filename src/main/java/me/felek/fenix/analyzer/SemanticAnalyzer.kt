@@ -17,6 +17,7 @@ import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
 import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
@@ -131,6 +132,13 @@ class SemanticAnalyzer : Visitor<ValueType> {
         env.defineVariable(varDecl.name, varDecl.type, varDecl.isConst)
 
         return varDecl.type!!
+    }
+
+    override fun visit(logic: IsExpr): ValueType {
+        visit(logic.left)
+        logic.isType = resolveType(logic.isType)
+
+        return ValueType.BOOL
     }
 
     override fun visit(id: IdExpr): ValueType {
@@ -426,6 +434,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is IncDecExpr -> visit(expr)
             is NewExpr -> visit(expr)
             is LogicExpr -> visit(expr)
+            is IsExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID
