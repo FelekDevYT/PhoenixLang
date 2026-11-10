@@ -32,6 +32,7 @@ import me.felek.ast.exprs.util.ECType
 import me.felek.ast.exprs.util.Logic
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
+import me.felek.ast.invoke.InvokeVirtual
 import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.bright.parser.FenixBaseVisitor
@@ -50,7 +51,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     val importMap: MutableMap<String, String> = mutableMapOf()
 
     override fun visitUsingDeclaration(ctx: FenixParser.UsingDeclarationContext?): Expr? {
-        importMap[ctx!!.STRING().text.substring(1, ctx.STRING().text.length - 1).substring(ctx.STRING().text.lastIndexOf('.'))] = ctx.STRING().text.substring(1, ctx.STRING().text.length - 1)
+        importMap[ctx!!.STRING().text.removeSurrounding("\"").substringAfterLast('.')] = ctx.STRING().text.removeSurrounding("\"")
 
         return null
     }
@@ -162,14 +163,14 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         }
     }
 
-    override fun visitInvokeStatic(ctx: FenixParser.InvokeStaticContext?): Expr {
-        val list: MutableList<Expr> = mutableListOf()
+    override fun visitInvokeVirtualStatic(ctx: FenixParser.InvokeVirtualStaticContext?): Expr? {
+        val args = ctx!!.expr().subList(1, ctx.expr().size).map { visit(it)!! }
 
-        for (expr in ctx!!.expr()) {
-            list.add(visit(expr)!!)
+        if (ctx.expr(0) is FenixParser.IdContext && ctx.expr(0).text.first().isUpperCase()) {
+            return InvokeStaticExpr(ctx.start.line, ctx.start.charPositionInLine, ctx.expr(0).text, ctx.ID().text, args)
         }
 
-        return InvokeStaticExpr(ctx.start.line, ctx.start.charPositionInLine, ctx.ID(0).text, ctx.ID(1).text, list)
+        return InvokeVirtual(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0)), ctx.ID().text, args)
     }
 
     override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr {

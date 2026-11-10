@@ -61,7 +61,7 @@ class ErrorStrategy : DefaultErrorStrategy() {
             }
             is FenixParser.BlockContext -> 0x031
             is FenixParser.InvokeLocalContext -> if (token!!.text == ",") 0x042 else 0x041
-            is FenixParser.InvokeStaticContext -> if (token!!.text == ",") 0x042 else 0x041
+//            is FenixParser.InvokeStaticContext -> if (token!!.text == ",") 0x042 else 0x041
             is FenixParser.ProgramContext -> when (token!!.text) {
                 "}" -> 0x032
                 "else" -> 0x044
@@ -73,7 +73,7 @@ class ErrorStrategy : DefaultErrorStrategy() {
     }
 
     private fun isOp(text: String): Boolean {
-        return text == "+" || text == "-" || text == "*" || text == "/" || text == "%" || text == "+" || text == "-" ||
+        return text == "+" || text == "-" || text == "*" || text == "/" || text == "%" ||
                 text == "==" || text == "!=" || text == ">=" || text == "<=" || text == "<" || text == ">"
     }
 

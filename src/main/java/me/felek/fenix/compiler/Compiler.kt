@@ -30,6 +30,7 @@ import me.felek.ast.exprs.util.ECType
 import me.felek.ast.exprs.util.Logic
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
+import me.felek.ast.invoke.InvokeVirtual
 import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.ast.visitor.Visitor
@@ -424,6 +425,21 @@ class Compiler : Visitor<Unit> {
         ga!!.instanceOf(Type.getType(logic.isType.descriptor))
     }
 
+    override fun visit(expr: InvokeVirtual) {
+        visit(expr.owner)
+
+        for (arg in expr.args) {
+            visit(arg)
+        }
+
+        val owner = Class.forName(expr.asmType.className)
+        if (owner.isInterface) {
+            ga!!.invokeInterface(expr.asmType, expr.asmMethod)
+        } else {
+            ga!!.invokeVirtual(expr.asmType, expr.asmMethod)
+        }
+    }
+
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -453,6 +469,7 @@ class Compiler : Visitor<Unit> {
             is NewExpr -> visit(expr)
             is LogicExpr -> visit(expr)
             is IsExpr -> visit(expr)
+            is InvokeVirtual -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

@@ -1,6 +1,7 @@
-using "java.lang.Math";
+using "javax.swing.JFrame";
 
-func main(args: Str[]) -> Int {
-    var a: Math[][] = new Math[5][10];
-    return -12;
+func main(args: Str[]) -> Void {
+    var frame: JFrame = new JFrame("Hello!");
+    frame.setSize(500, 600);
+    frame.setVisible(true);
 }

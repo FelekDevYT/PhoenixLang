@@ -27,6 +27,7 @@ import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
+import me.felek.ast.invoke.InvokeVirtual
 import me.felek.ast.loop.WhileExpr
 import me.felek.fenix.ast.ASTResult
 
@@ -46,6 +47,7 @@ interface Visitor<T> {
 
     fun visit(expr: InvokeStaticExpr): T
     fun visit(expr: InvokeLocalExpr): T
+    fun visit(expr: InvokeVirtual): T
 
     fun visit(varDecl: VariableDeclaration): T
     fun visit(id: IdExpr): T

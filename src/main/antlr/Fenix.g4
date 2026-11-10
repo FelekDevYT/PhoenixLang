@@ -16,7 +16,7 @@ expr:
       | left=expr ('[' main+=expr ']')+       #ArrayGet
       | 'new' (ID | primitiveType) ('[' expr ']')+ #ArrayNewCreate
       | 'new' ID '(' (expr (',' expr)*)? ')'  #New
-      | ID '.' ID '(' (expr (',' expr)*)? ')' #InvokeStatic
+      | expr '.' ID '(' (expr (',' expr)*)? ')' #InvokeVirtualStatic
       | ID '(' (expr (',' expr)*)? ')'        #InvokeLocal
       | ID                                    #Id
       | expr 'as' type                        #Cast
