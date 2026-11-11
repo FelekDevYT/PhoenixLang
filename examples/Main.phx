@@ -1,7 +1,7 @@
 using "java.awt.Point";
 using "java.lang.IO";
 
-func main(args: Str[]) -> Void {
+loc func main(args: Str[]) -> Void {
     var point: Point = new Point(5, 5);
     IO.println("before:");
     IO.println(point.x);

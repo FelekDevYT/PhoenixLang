@@ -136,19 +136,19 @@ class Compiler : Visitor<Unit> {
         this.moduleName = decl.moduleName
 
         for (f in decl.functions) {
-            functions[f.name] = FunctionSymbol(f.name, f.args, f.returnType)
+            functions[f.name] = FunctionSymbol(f.name, f.args, f.returnType, f.modifier)
         }
 
         for (decl in decl.functions) {
             val sb: StringBuilder = StringBuilder("(")
             for (arg in decl.args) {
-                sb.append(arg.type!!.descriptor)
+                sb.append(arg.type.descriptor)
             }
             sb.append(")")
             sb.append(decl.returnType.descriptor)
 
-            val mv: MethodVisitor = cw.visitMethod(ACC_PUBLIC or ACC_STATIC, decl.name, sb.toString(), null, null)//Java 21 bytecode support
-            ga = GeneratorAdapter(mv, ACC_PUBLIC or ACC_STATIC, decl.name, sb.toString())
+            val mv: MethodVisitor = cw.visitMethod(decl.modifier.opcode, decl.name, sb.toString(), null, null)//Java 21 bytecode support
+            ga = GeneratorAdapter(mv, decl.modifier.opcode, decl.name, sb.toString())
 
             ga!!.visitCode()
 

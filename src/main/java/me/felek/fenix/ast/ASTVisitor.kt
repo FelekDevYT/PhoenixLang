@@ -39,6 +39,7 @@ import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.bright.parser.FenixBaseVisitor
 import me.felek.bright.parser.FenixParser
+import me.felek.fenix.scope.Modifier
 import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 
@@ -65,7 +66,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
             list.add(Arg(arg.ID().text, TypeUtils.typeByName(OtherUtils.resolveImport(arg.type().text, importMap))))
         }
 
-        functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)), if (ctx.block() == null) visit(ctx.expr())!! else visit(ctx.block())!!))
+        functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, Modifier.valueOf(ctx.BASE_MODIFIER().text.uppercase()), if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)), if (ctx.block() == null) visit(ctx.expr())!! else visit(ctx.block())!!))
 
         return null
     }

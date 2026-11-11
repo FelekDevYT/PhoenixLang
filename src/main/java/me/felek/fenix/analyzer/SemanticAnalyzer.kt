@@ -628,7 +628,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
                 usedNames.add(name)
             }
 
-            functions[f.name] = FunctionSymbol(f.name, f.args, f.returnType)
+            functions[f.name] = FunctionSymbol(f.name, f.args, f.returnType, f.modifier)
         }
 
         for (f in decl.functions) {
@@ -639,7 +639,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
                 env.defineVariable(name, type, true)
             }
 
-            currentFunction = FunctionSymbol(f.name, f.args, f.returnType)
+            currentFunction = FunctionSymbol(f.name, f.args, f.returnType, f.modifier)
 
             visit(f.body)
             env = temp

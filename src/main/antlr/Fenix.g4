@@ -3,7 +3,7 @@ grammar Fenix;
 program: usingDeclaration* functionDeclaration* EOF;
 usingDeclaration: 'using' STRING ';';
 
-functionDeclaration: 'func' ID '(' (arg (',' arg)*)? ')' ('->' type)? (block | '=' expr);
+functionDeclaration: BASE_MODIFIER 'func' ID '(' (arg (',' arg)*)? ')' ('->' type)? (block | '=' expr);
 arg: ID ':' type;
 
 expr:
@@ -47,6 +47,8 @@ assignmentDecl: (ID | ID ('[' index+=expr ']')+) '=' right=expr;
 
 type: base=('Int' | 'Str' | 'Float' | 'Bool' | 'Void' | ID) ('[' ']')*;
 primitiveType: 'Int' | 'Str' | 'Float' | 'Bool';
+
+BASE_MODIFIER: 'pub' | 'loc';
 
 VAR: 'var';
 CONST: 'const';
