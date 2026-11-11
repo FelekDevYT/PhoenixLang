@@ -13,6 +13,7 @@ import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
+import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
@@ -21,6 +22,7 @@ import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
+import me.felek.ast.exprs.SetField
 import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
@@ -38,6 +40,7 @@ import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.Method
+import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.ArrayDeque
 
@@ -446,7 +449,121 @@ class SemanticAnalyzer : Visitor<ValueType> {
         }
 
         expr.asmMethod = Method.getMethod(method)
+
         return TypeUtils.typeByDescriptor(method.returnType.descriptorString())
+    }
+
+    override fun visit(field: GetField): ValueType {
+        if (field.left is IdExpr && env.lookupVariable((field.left as IdExpr).id) == null) {
+            val name = OtherUtils.resolveImport((field.left as IdExpr).id, result.importMap)
+
+            try {
+                field.clazz = Class.forName(name)
+            } catch (_: ClassNotFoundException) {
+                errors.add(Error(field.line, field.column, 0xB00, "Java class not found: $name"))
+                return ValueType.VOID
+            }
+
+            try {
+                field.field = field.clazz!!.getField(field.name)
+            } catch (_: NoSuchFieldException) {
+                errors.add(Error(field.line, field.column, 0x314, "Field not found: ${field.name}"))
+                return ValueType.VOID
+            }
+
+            if (!Modifier.isStatic(field.field!!.modifiers)) {
+                errors.add(Error(field.line, field.column, 0x316, "Instance field ${field.name} can not be accessed from class"))
+                return ValueType.VOID
+            }
+
+            field.isStatic = true
+            return TypeUtils.typeByDescriptor(field.field!!.type.descriptorString())
+        }
+
+        val owner: ValueType = visit(field.left)
+
+        val name = OtherUtils.resolveImport(owner.name, result.importMap)
+        try {
+            field.clazz = Class.forName(name)
+        } catch (_: ClassNotFoundException) {
+            errors.add(Error(field.line, field.column, 0xB00, "Java class not found: $name"))
+            return ValueType.VOID
+        }
+
+        try {
+            field.field = field.clazz!!.getField(field.name)
+        } catch (_: ClassNotFoundException) {
+            errors.add(Error(field.line, field.column, 0x314, "Field not found: ${field.name}"))
+            return ValueType.VOID
+        }
+
+        return TypeUtils.typeByDescriptor(field.field!!.type.descriptorString())
+    }
+
+    override fun visit(field: SetField): ValueType {
+        if (field.left is IdExpr && env.lookupVariable((field.left as IdExpr).id) == null) {
+            val name = OtherUtils.resolveImport((field.left as IdExpr).id, result.importMap)
+            try {
+                field.clazz = Class.forName(name)
+            } catch (_: ClassNotFoundException) {
+                errors.add(Error(field.line, field.column, 0xB00, "Java class not found: $name"))
+                return ValueType.VOID
+            }
+
+            try {
+                field.field = field.clazz!!.getField(field.id)
+            } catch (_: NoSuchFieldException) {
+                errors.add(Error(field.line, field.column, 0x314, "Field not found: ${field.id}"))
+                return ValueType.VOID
+            }
+
+            if (!Modifier.isStatic(field.field!!.modifiers)) {
+                errors.add(Error(field.line, field.column, 0x316, "Instance field ${field.id} can not be assigned from class"))
+                return ValueType.VOID
+            }
+            if (Modifier.isFinal(field.field!!.modifiers)) {
+                errors.add(Error(field.line, field.column, 0x110, "Constant can not be assigned"))
+                return ValueType.VOID
+            }
+
+            val value: ValueType = visit(field.right)
+            val type: ValueType = TypeUtils.typeByDescriptor(field.field!!.type.descriptorString())
+            if (value != type) {
+                errors.add(Error(field.line, field.column, 0x200, "Incompatible types: $value and $type"))
+            }
+
+            field.isStatic = true
+            return value
+        }
+
+        val owner: ValueType = visit(field.left)
+        val value: ValueType = visit(field.right)
+
+        if (owner == ValueType.VOID && field.left !is IdExpr) {
+            return ValueType.VOID
+        }
+
+        val name = OtherUtils.resolveImport(owner.name, result.importMap)
+        try {
+            field.clazz = Class.forName(name)
+        } catch (_: ClassNotFoundException) {
+            errors.add(Error(field.line, field.column, 0xB00, "Java class not found: $name"))
+            return ValueType.VOID
+        }
+
+        try {
+            field.field = field.clazz!!.getField(field.id)
+        } catch (_: ClassNotFoundException) {
+            errors.add(Error(field.line, field.column, 0x314, "Field not found: ${field.id}"))
+            return ValueType.VOID
+        }
+
+        val type: ValueType = TypeUtils.typeByDescriptor(field.field!!.type.descriptorString())
+        if (value != type) {
+            errors.add(Error(field.line, field.column, 0x200, "Incompatible types: $value and $type"))
+        }
+
+        return value
     }
 
     override fun visit(expr: Expr): ValueType {
@@ -478,6 +595,9 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is LogicExpr -> visit(expr)
             is IsExpr -> visit(expr)
             is InvokeVirtual -> visit(expr)
+            is InvokeStaticExpr -> visit(expr)
+            is GetField -> visit(expr)
+            is SetField -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

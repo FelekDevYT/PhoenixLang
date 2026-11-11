@@ -13,6 +13,7 @@ import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
+import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
@@ -21,6 +22,7 @@ import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
+import me.felek.ast.exprs.SetField
 import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
@@ -440,6 +442,28 @@ class Compiler : Visitor<Unit> {
         }
     }
 
+    override fun visit(field: GetField) {
+        if (field.isStatic) {
+            ga!!.getStatic(Type.getType(field.clazz), field.name, Type.getType(field.field!!.type.descriptorString()))
+            return
+        }
+
+        visit(field.left)
+        ga!!.getField(Type.getType(field.clazz), field.name, Type.getType(field.field!!.type.descriptorString()))
+    }
+
+    override fun visit(field: SetField) {
+        if (field.isStatic) {
+            visit(field.right)
+            ga!!.putStatic(Type.getType(field.clazz), field.id, Type.getType(field.field!!.type.descriptorString()))
+            return
+        }
+
+        visit(field.left)
+        visit(field.right)
+        ga!!.putField(Type.getType(field.clazz), field.id, Type.getType(field.field!!.type.descriptorString()))
+    }
+
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
@@ -470,6 +494,8 @@ class Compiler : Visitor<Unit> {
             is LogicExpr -> visit(expr)
             is IsExpr -> visit(expr)
             is InvokeVirtual -> visit(expr)
+            is SetField -> visit(expr)
+            is GetField -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

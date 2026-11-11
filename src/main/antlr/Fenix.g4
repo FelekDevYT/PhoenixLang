@@ -18,6 +18,8 @@ expr:
       | 'new' ID '(' (expr (',' expr)*)? ')'  #New
       | expr '.' ID '(' (expr (',' expr)*)? ')' #InvokeVirtualStatic
       | ID '(' (expr (',' expr)*)? ')'        #InvokeLocal
+      | expr '.' ID                           #GetField
+      | expr '.' ID '=' expr                  #SetField
       | ID                                    #Id
       | expr 'as' type                        #Cast
       | '-' expr                              #UnaryMinus

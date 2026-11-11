@@ -13,6 +13,7 @@ import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
+import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
@@ -21,6 +22,7 @@ import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
+import me.felek.ast.exprs.SetField
 import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
@@ -71,6 +73,9 @@ interface Visitor<T> {
     fun visit(new: NewExpr): T
     fun visit(logic: LogicExpr): T
     fun visit(logic: IsExpr): T
+
+    fun visit(field: GetField): T
+    fun visit(field: SetField): T
 
     fun visit(expr: Expr): T
     fun visit(decl: ASTResult): T

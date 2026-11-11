@@ -1,7 +1,14 @@
-using "javax.swing.JFrame";
+using "java.awt.Point";
+using "java.lang.IO";
 
 func main(args: Str[]) -> Void {
-    var frame: JFrame = new JFrame("Hello!");
-    frame.setSize(500, 600);
-    frame.setVisible(true);
+    var point: Point = new Point(5, 5);
+    IO.println("before:");
+    IO.println(point.x);
+    IO.println(point.y);
+    IO.println("after:");
+    point.x = 12;
+    point.y = -10;
+    IO.println(point.x);
+    IO.println(point.y);
 }

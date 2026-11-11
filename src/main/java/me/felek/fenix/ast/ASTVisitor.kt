@@ -15,6 +15,7 @@ import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
 import me.felek.ast.exprs.ForExpr
+import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
@@ -23,6 +24,7 @@ import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
+import me.felek.ast.exprs.SetField
 import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
@@ -145,6 +147,14 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         }
 
         return EqCmpExpr(ctx.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0))!!, visit(ctx.expr(1))!!, op)
+    }
+
+    override fun visitGetField(ctx: FenixParser.GetFieldContext?): Expr {
+        return GetField(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr()), ctx.ID().text)
+    }
+
+    override fun visitSetField(ctx: FenixParser.SetFieldContext?): Expr {
+        return SetField(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr(0)), ctx.ID().text, visit(ctx.expr(1)))
     }
 
     override fun visitMultiplicative(ctx: FenixParser.MultiplicativeContext?): Expr {
