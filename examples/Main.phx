@@ -1,7 +1,6 @@
 pub func main(a: Int, b: Int) -> Void {
-    var a: Int = 0;
-    for (; a < 100; a++) {
-        System.out.println(a);
+    if a >= 15 {
+        System.out.println(123);
     };
     return;
 }
