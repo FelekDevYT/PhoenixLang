@@ -1,5 +1,13 @@
 package me.felek.fenix.utils
 
+import me.felek.ast.exprs.util.AssignmentType
+import me.felek.ast.exprs.util.AssignmentType.ADD
+import me.felek.ast.exprs.util.AssignmentType.DIV
+import me.felek.ast.exprs.util.AssignmentType.EQ
+import me.felek.ast.exprs.util.AssignmentType.MUL
+import me.felek.ast.exprs.util.AssignmentType.REM
+import me.felek.ast.exprs.util.AssignmentType.SUB
+
 /**
  * @className: OtherUtils
  * @author: Felek
@@ -26,5 +34,17 @@ object OtherUtils {
                $line |      $codeline
                 |
         """.trimIndent()
+    }
+
+    @JvmStatic
+    fun getAssignment(op: String): AssignmentType {
+        return when (op) {
+            "-=" -> SUB
+            "+=" -> ADD
+            "*=" -> MUL
+            "/=" -> DIV
+            "%=" -> REM
+            else -> EQ
+        }
     }
 }

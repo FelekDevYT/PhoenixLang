@@ -30,6 +30,8 @@ dependencies {
     implementation("org.ow2.asm:asm-analysis")
     implementation("org.ow2.asm:asm-commons")
     implementation("org.ow2.asm:asm-util")
+
+    implementation("io.github.classgraph:classgraph:6.0.2")
 }
 
 tasks.generateGrammarSource {

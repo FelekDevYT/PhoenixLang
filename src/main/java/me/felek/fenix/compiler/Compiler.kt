@@ -27,6 +27,7 @@ import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
+import me.felek.ast.exprs.util.AssignmentType
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
 import me.felek.ast.exprs.util.Logic
@@ -319,10 +320,43 @@ class Compiler : Visitor<Unit> {
             }
 
             visit(assignment.indexes.last())
-            visit(assignment.value)
+
+            val type = when (assignment.type) {
+                AssignmentType.ADD -> GeneratorAdapter.ADD
+                AssignmentType.DIV -> GeneratorAdapter.DIV
+                AssignmentType.SUB -> GeneratorAdapter.SUB
+                AssignmentType.MUL -> GeneratorAdapter.MUL
+                AssignmentType.REM -> GeneratorAdapter.REM
+                AssignmentType.EQ -> GeneratorAdapter.EQ
+            }
+
+            if (type != GeneratorAdapter.EQ) {
+                ga!!.dup2()
+                ga!!.arrayLoad(Type.getType(desc))
+                visit(assignment.value)
+                ga!!.math(type, Type.getType(assignment.variableValue.descriptor))
+            } else {
+                visit(assignment.value)
+            }
+
             ga!!.arrayStore(Type.getType(desc.removePrefix("[")))
         } else {
-            visit(assignment.value)
+            val type = when (assignment.type) {
+                AssignmentType.ADD -> GeneratorAdapter.ADD
+                AssignmentType.DIV -> GeneratorAdapter.DIV
+                AssignmentType.SUB -> GeneratorAdapter.SUB
+                AssignmentType.MUL -> GeneratorAdapter.MUL
+                AssignmentType.REM -> GeneratorAdapter.REM
+                AssignmentType.EQ -> GeneratorAdapter.EQ
+            }
+
+            if (type != GeneratorAdapter.EQ) {
+                ga!!.loadLocal(env.lookupVariable(assignment.name).id)
+                visit(assignment.value)
+                ga!!.math(type, Type.getType(assignment.variableValue.descriptor))
+            } else {
+                visit(assignment.value)
+            }
             ga!!.storeLocal(env.lookupVariable(assignment.name).id)
         }
     }

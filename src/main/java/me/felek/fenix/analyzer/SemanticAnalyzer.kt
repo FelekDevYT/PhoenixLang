@@ -1,5 +1,6 @@
 package me.felek.fenix.analyzer
 
+import io.github.classgraph.ClassGraph
 import me.felek.ast.Expr
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
@@ -40,7 +41,6 @@ import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.Method
-import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.ArrayDeque
 
@@ -261,7 +261,11 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
         if (assignment.indexes.isNotEmpty()) {
             val varType = variable.type
-            val result = ValueType(varType.descriptor.removePrefix("[".repeat(assignment.indexes.size)), varType.name.removeSuffix("[]".repeat(assignment.indexes.size)),varType.dimensions - assignment.indexes.size)
+            val result = ValueType(
+                varType.descriptor.removePrefix("[".repeat(assignment.indexes.size)),
+                varType.name.removeSuffix("[]".repeat(assignment.indexes.size)),
+                varType.dimensions - assignment.indexes.size
+            )
 
             if (result != out) {
                 errors.add(Error(assignment.line, assignment.column, 0x200, "Incompatible types: $result and $out"))
@@ -269,6 +273,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
             assignment.firstValue = variable.type
         }
+        assignment.variableValue = out
 
         return out
     }
@@ -421,7 +426,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(expr: InvokeVirtual): ValueType {
-        if (expr.owner !is ArrayGetExpr && expr.owner !is IdExpr && expr.owner !is InvokeLocalExpr) {
+        if (expr.owner !is ArrayGetExpr && expr.owner !is IdExpr && expr.owner !is InvokeLocalExpr && expr.owner !is GetField) {
             errors.add(Error(expr.line, expr.column, 0x201, "Virtual invoke only applicable to arrayGet, local function call or variable"))
         }
         val desc = visit(expr.owner)
@@ -608,7 +613,14 @@ class SemanticAnalyzer : Visitor<ValueType> {
     override fun visit(decl: ASTResult): ValueType {
         result = decl
 
+        //java.lang default imports
+        val javaClasses: Set<Class<*>> = ClassGraph().enableClassInfo().enableSystemJars().enableSystemModules().acceptPackagesNonRecursive("java.lang").scan().use { it.allClasses.map { Class.forName(it.name) }.toSet() }
+        for (clazz in javaClasses) {
+            result.importMap[clazz.simpleName] = clazz.canonicalName
+        }
+
         for (f in decl.functions) {
+
             f.returnType = resolveType(f.returnType)
             for (arg in f.args) {
                 arg.type = resolveType(arg.type)

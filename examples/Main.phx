@@ -1,14 +1,3 @@
-using "java.awt.Point";
-using "java.lang.IO";
-
-loc func main(args: Str[]) -> Void {
-    var point: Point = new Point(5, 5);
-    IO.println("before:");
-    IO.println(point.x);
-    IO.println(point.y);
-    IO.println("after:");
-    point.x = 12;
-    point.y = -10;
-    IO.println(point.x);
-    IO.println(point.y);
+pub func main(args: Str[]) -> Void {
+    System.out.println(123);
 }

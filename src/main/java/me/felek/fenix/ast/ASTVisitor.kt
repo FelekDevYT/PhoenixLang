@@ -29,6 +29,7 @@ import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
+import me.felek.ast.exprs.util.AssignmentType
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
 import me.felek.ast.exprs.util.Logic
@@ -185,7 +186,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitAssignmentDecl(ctx: FenixParser.AssignmentDeclContext?): Expr {
-        return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, if (ctx.expr().isEmpty()) ArrayList() else ctx.index.map { visit(it) }, visit(ctx.right))
+        return AssignmentExpression(ctx!!.start.line, ctx.start.charPositionInLine, ctx.ID().text, if (ctx.expr().isEmpty()) ArrayList() else ctx.index.map { visit(it) }, OtherUtils.getAssignment(ctx.op.text), visit(ctx.right))
     }
 
     override fun visitLogic(ctx: FenixParser.LogicContext?): Expr? {
