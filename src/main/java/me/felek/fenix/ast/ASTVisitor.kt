@@ -66,8 +66,15 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         for (arg in ctx!!.arg()) {
             list.add(Arg(arg.ID().text, TypeUtils.typeByName(OtherUtils.resolveImport(arg.type().text, importMap))))
         }
+        var body: Expr
+        if (ctx.expr() == null) {
+            //block
+            body = visit(ctx.block())
+        } else {
+            body = BlockExpr(ctx.expr().start.line, ctx.expr().start.charPositionInLine, listOf(ReturnExpr(ctx.expr().start.line, ctx.expr().start.charPositionInLine, visit(ctx.expr()))))
+        }
 
-        functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, Modifier.valueOf(ctx.BASE_MODIFIER().text.uppercase()), if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)), if (ctx.block() == null) visit(ctx.expr())!! else visit(ctx.block())!!))
+        functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, Modifier.valueOf(ctx.BASE_MODIFIER().text.uppercase()), if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)), body))
 
         return null
     }
