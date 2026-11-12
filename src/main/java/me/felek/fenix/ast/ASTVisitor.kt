@@ -79,6 +79,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         return null
     }
 
+    override fun visitBlockExpr(ctx: FenixParser.BlockExprContext?): Expr {
+        return visit(ctx!!.block())
+    }
+
     override fun visitArrayNewCreate(ctx: FenixParser.ArrayNewCreateContext?): Expr? {
         return ArrayCreateExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.expr().map { visit(it) }, TypeUtils.typeByName(OtherUtils.resolveImport(if (ctx.ID() == null) ctx.primitiveType().text else ctx.ID().text, importMap)))
     }

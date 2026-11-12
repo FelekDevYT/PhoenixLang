@@ -1,1 +1,5 @@
-pub func summ(a: Int, b: Int) -> Int = a + b;
+pub func summ(a: Int, b: Int) -> Int {
+    {
+        return a + b;
+    };
+}

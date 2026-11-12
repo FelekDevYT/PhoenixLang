@@ -37,6 +37,7 @@ expr:
       | 'break'                               #Break
       | 'continue'                            #Continue
       | 'return' expr?                        #Return
+      | block                                 #BlockExpr
       ;
 
 inccDec: ID (INC='++' | DEC='--' );
