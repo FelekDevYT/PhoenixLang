@@ -1,5 +1,7 @@
-pub func summ(a: Int, b: Int) -> Int {
-    {
-        return a + b;
+pub func main(a: Int, b: Int) -> Void {
+    var a: Int = 0;
+    for (; a < 100; a++) {
+        System.out.println(a);
     };
+    return;
 }

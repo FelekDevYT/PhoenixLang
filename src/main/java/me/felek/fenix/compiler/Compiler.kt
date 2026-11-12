@@ -206,8 +206,7 @@ class Compiler : Visitor<Unit> {
         val end: Label = ga!!.newLabel()
         val elseLbl: Label = ga!!.newLabel()
 
-        visit(ifelse.ifExpr)
-        ga!!.ifZCmp(GeneratorAdapter.EQ, elseLbl)
+        visitJump(ifelse.ifExpr, elseLbl)
         visit(ifelse.ifStmt)
         ga!!.goTo(end)
         ga!!.mark(elseLbl)
@@ -248,8 +247,7 @@ class Compiler : Visitor<Unit> {
         continueQueue.push(lblStart)
 
         ga!!.mark(lblStart)
-        visit(whileExpr.condition)
-        ga!!.ifZCmp(GeneratorAdapter.EQ, lblEnd)
+        visitJump(whileExpr.condition, lblEnd)
         visit(whileExpr.statement)
         ga!!.goTo(lblStart)
         ga!!.mark(lblEnd)
@@ -268,13 +266,19 @@ class Compiler : Visitor<Unit> {
         val temp = env
         env = Environment(env)
 
-        visit(forExpr.initializer)
+        if (forExpr.initializer != null) {
+            visit(forExpr.initializer!!)
+        }
 
         ga!!.mark(start)
-        visit(forExpr.condition)
-        ga!!.ifZCmp(GeneratorAdapter.EQ, end)
+        if (forExpr.condition != null) {
+            visitJump(forExpr.condition!!, end)
+        }
+
         visit(forExpr.body)
-        visit(forExpr.increment)
+        if (forExpr.increment != null) {
+            visit(forExpr.increment!!)
+        }
         ga!!.goTo(start)
         ga!!.mark(end)
 
@@ -536,5 +540,23 @@ class Compiler : Visitor<Unit> {
 
     fun bytecode(): ByteArray {
         return cw.toByteArray()
+    }
+
+    fun visitJump(e: Expr, falseLbl: Label) {
+        if (e is EqCmpExpr) {
+            visit(e.left)
+            visit(e.right)
+            ga!!.ifCmp(e.type, when (e.ec) {
+                ECType.BT -> GeneratorAdapter.LE
+                ECType.BE -> GeneratorAdapter.LT
+                ECType.EQ -> GeneratorAdapter.NE
+                ECType.NEQ -> GeneratorAdapter.EQ
+                ECType.LE -> GeneratorAdapter.GT
+                ECType.LT -> GeneratorAdapter.GE
+            }, falseLbl)
+        } else {
+            visit(e)
+            ga!!.ifZCmp(GeneratorAdapter.EQ, falseLbl)
+        }
     }
 }

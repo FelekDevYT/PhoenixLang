@@ -241,10 +241,22 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitFor(ctx: FenixParser.ForContext?): Expr {
-        val initializer = visit(ctx!!.varDecl())!! as VariableDeclaration
-        val condition = visit(ctx.expr())!!
+        val initializer: Expr? = if (ctx!!.varDecl() != null) {
+            visit(ctx.varDecl())
+        } else {
+            null
+        }
+        val condition: Expr? = if (ctx.expr() != null) {
+            visit(ctx.expr())
+        } else {
+            null
+        }
         val increment: Expr? = if (ctx.assignmentDecl() == null) {
-            visit(ctx.inccDec())
+            if (ctx.inccDec() != null) {
+                visit(ctx.inccDec())
+            } else {
+                null
+            }
         } else {
             visit(ctx.assignmentDecl())
         }
@@ -254,7 +266,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
             visit(ctx.statement().expr())!!
         }
 
-        return ForExpr(ctx.start.line, ctx.start.charPositionInLine, initializer, condition,  increment!!, body)
+        return ForExpr(ctx.start.line, ctx.start.charPositionInLine, initializer.let { it as? VariableDeclaration }, condition,  increment, body)
     }
 
     override fun visitInvokeLocal(ctx: FenixParser.InvokeLocalContext?): Expr {

@@ -1,5 +1,7 @@
 package me.felek.fenix.utils
 
+import me.felek.ast.Expr
+import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.util.AssignmentType
 import me.felek.ast.exprs.util.AssignmentType.ADD
 import me.felek.ast.exprs.util.AssignmentType.DIV
@@ -7,6 +9,8 @@ import me.felek.ast.exprs.util.AssignmentType.EQ
 import me.felek.ast.exprs.util.AssignmentType.MUL
 import me.felek.ast.exprs.util.AssignmentType.REM
 import me.felek.ast.exprs.util.AssignmentType.SUB
+import org.objectweb.asm.commons.GeneratorAdapter
+import java.awt.Label
 
 /**
  * @className: OtherUtils

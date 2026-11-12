@@ -297,11 +297,15 @@ class SemanticAnalyzer : Visitor<ValueType> {
         val temp: Environment = env
         env = Environment(env)
 
-        visit(forExpr.initializer)
-        if (visit(forExpr.condition) != ValueType.BOOL) {
+        if (forExpr.initializer != null) {
+            visit(forExpr.initializer!!)
+        }
+        if (forExpr.condition != null && visit(forExpr.condition!!) != ValueType.BOOL) {
             errors.add(Error(forExpr.line, forExpr.column, 0x203, "Non-bool condition"))
         }
-        visit(forExpr.increment)
+        if (forExpr.increment != null) {
+            visit(forExpr.increment!!)
+        }
 
         val out = visit(forExpr.body)
 
