@@ -12,7 +12,7 @@ import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
-import me.felek.ast.exprs.ForExpr
+import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
@@ -30,6 +30,7 @@ import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.invoke.InvokeVirtual
+import me.felek.ast.loop.DoWhileExpr
 import me.felek.ast.loop.WhileExpr
 import me.felek.fenix.ast.ASTResult
 
@@ -76,6 +77,7 @@ interface Visitor<T> {
 
     fun visit(field: GetField): T
     fun visit(field: SetField): T
+    fun visit(loop: DoWhileExpr): T
 
     fun visit(expr: Expr): T
     fun visit(decl: ASTResult): T

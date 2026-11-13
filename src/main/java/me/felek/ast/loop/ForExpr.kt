@@ -1,6 +1,7 @@
-package me.felek.ast.exprs
+package me.felek.ast.loop
 
 import me.felek.ast.Expr
+import me.felek.ast.exprs.VariableDeclaration
 
 /**
  * @className: ForExpr

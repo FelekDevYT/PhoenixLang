@@ -13,7 +13,7 @@ import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
-import me.felek.ast.exprs.ForExpr
+import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
@@ -31,6 +31,7 @@ import me.felek.ast.exprs.VariableDeclaration
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.invoke.InvokeVirtual
+import me.felek.ast.loop.DoWhileExpr
 import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.ast.visitor.Visitor
@@ -249,6 +250,20 @@ class SemanticAnalyzer : Visitor<ValueType> {
         return result
     }
 
+    override fun visit(loop: DoWhileExpr): ValueType {
+        if (visit(loop.condition) != ValueType.BOOL) {
+            errors.add(Error(loop.line, loop.column, 0x203, "Non-bool condition"))
+        }
+
+        breakQueue.push(true)
+        continueQueue.push(true)
+        val result = visit(loop.statement)
+        breakQueue.pop()
+        continueQueue.pop()
+
+        return result
+    }
+
     override fun visit(assignment: AssignmentExpression): ValueType {
         val variable = env.lookupVariable(assignment.name)
         if (variable == null) {
@@ -353,7 +368,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             return ValueType.VOID
         }
         if (value.dimensions < arrayGet.indexes.size) {
-            errors.add(Error(arrayGet.line, arrayGet.column, 511, "Trying to get a lot of dimensions"))
+            errors.add(Error(arrayGet.line, arrayGet.column, 0x511, "Trying to get a lot of dimensions"))
             return ValueType.VOID
         }
 
@@ -607,6 +622,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is InvokeStaticExpr -> visit(expr)
             is GetField -> visit(expr)
             is SetField -> visit(expr)
+            is DoWhileExpr -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID

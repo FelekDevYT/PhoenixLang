@@ -12,7 +12,7 @@ import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
-import me.felek.ast.exprs.ForExpr
+import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
@@ -34,6 +34,7 @@ import me.felek.ast.exprs.util.Logic
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.invoke.InvokeVirtual
+import me.felek.ast.loop.DoWhileExpr
 import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.ast.visitor.Visitor
@@ -249,6 +250,25 @@ class Compiler : Visitor<Unit> {
         ga!!.mark(lblStart)
         visitJump(whileExpr.condition, lblEnd)
         visit(whileExpr.statement)
+        ga!!.goTo(lblStart)
+        ga!!.mark(lblEnd)
+
+        breakQueue.pop()
+        continueQueue.pop()
+    }
+
+    override fun visit(loop: DoWhileExpr) {
+        val lblStart: Label = ga!!.newLabel()
+        val lblCondition: Label = ga!!.newLabel()
+        val lblEnd: Label = ga!!.newLabel()
+
+        breakQueue.push(lblEnd)
+        continueQueue.push(lblCondition)
+
+        ga!!.mark(lblStart)
+        visit(loop.statement)
+        ga!!.mark(lblCondition)
+        visitJump(loop.condition, lblEnd)
         ga!!.goTo(lblStart)
         ga!!.mark(lblEnd)
 
@@ -534,6 +554,7 @@ class Compiler : Visitor<Unit> {
             is InvokeVirtual -> visit(expr)
             is SetField -> visit(expr)
             is GetField -> visit(expr)
+            is DoWhileExpr -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

@@ -14,7 +14,7 @@ import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
 import me.felek.ast.exprs.FloatExpr
-import me.felek.ast.exprs.ForExpr
+import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
@@ -29,13 +29,13 @@ import me.felek.ast.exprs.StrExpr
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
-import me.felek.ast.exprs.util.AssignmentType
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
 import me.felek.ast.exprs.util.Logic
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.invoke.InvokeVirtual
+import me.felek.ast.loop.DoWhileExpr
 import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.bright.parser.FenixBaseVisitor
@@ -133,6 +133,10 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
 
     override fun visitWhile(ctx: FenixParser.WhileContext?): Expr {
         return WhileExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, if (ctx.statement().expr() == null) visit(ctx.statement().block())!! else visit(ctx.statement().expr())!!)
+    }
+
+    override fun visitDoWhile(ctx: FenixParser.DoWhileContext?): Expr {
+        return DoWhileExpr(ctx!!.start.line, ctx.start.charPositionInLine, visit(ctx.expr())!!, if (ctx.statement().expr() == null) visit(ctx.statement().block())!! else visit(ctx.statement().expr())!!)
     }
 
     override fun visitIfElse(ctx: FenixParser.IfElseContext?): Expr {

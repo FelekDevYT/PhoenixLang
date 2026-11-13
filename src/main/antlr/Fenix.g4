@@ -30,6 +30,7 @@ expr:
       | expr op=('&&' | '||' | '^') expr      #Logic
       | 'if' (expr | '(' expr ')') statement ('else' statement)? #IfElse
       | 'while' ('(' expr ')' | expr) statement      #While
+      |'do' statement 'while' ('(' expr ')' | expr) #DoWhile
       | 'for' (varDecl? ';' expr? ';' (assignmentDecl | inccDec)? | '(' varDecl? ';' expr? ';' (assignmentDecl | inccDec)? ')') statement #For
       | assignmentDecl                        #Assignment
       | inccDec                               #IncDec
