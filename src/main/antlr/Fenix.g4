@@ -1,10 +1,14 @@
 grammar Fenix;
 
-program: usingDeclaration* functionDeclaration* EOF;
+program: usingDeclaration* (classDeclaration | functionDeclaration)* EOF;
 usingDeclaration: 'using' STRING ';';
 
+classDeclaration: BASE_MODIFIER 'class' ID '{' (classMember ';')* '}';
 functionDeclaration: BASE_MODIFIER 'func' ID '(' (arg (',' arg)*)? ')' ('->' type)? (block | '=' expr ';');
 arg: ID ':' type;
+
+classMember: classField;
+classField: BASE_MODIFIER varDecl;
 
 expr:
         '(' expr ')'                          #Parens

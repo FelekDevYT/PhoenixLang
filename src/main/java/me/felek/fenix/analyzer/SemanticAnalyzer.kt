@@ -2,6 +2,7 @@ package me.felek.fenix.analyzer
 
 import io.github.classgraph.ClassGraph
 import me.felek.ast.Expr
+import me.felek.ast.decl.clazz.ClassField
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
@@ -36,8 +37,10 @@ import me.felek.ast.loop.WhileExpr
 import me.felek.ast.type.ValueType
 import me.felek.ast.visitor.Visitor
 import me.felek.fenix.ast.ASTResult
+import me.felek.fenix.scope.ClassSymbol
 import me.felek.fenix.scope.Environment
 import me.felek.fenix.scope.FunctionSymbol
+import me.felek.fenix.scope.VariableSymbol
 import me.felek.fenix.utils.OtherUtils
 import me.felek.fenix.utils.TypeUtils
 import org.objectweb.asm.Type
@@ -56,6 +59,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
     private var env: Environment = Environment(null)//root
     private var errors: MutableList<Error> = mutableListOf()
     private var functions: MutableMap<String, FunctionSymbol> = mutableMapOf()
+    private var classes: MutableMap<String, ClassSymbol> = mutableMapOf()
     private var currentFunction: FunctionSymbol? = null
     private var continueQueue: ArrayDeque<Boolean> = ArrayDeque()
     private var breakQueue: ArrayDeque<Boolean> = ArrayDeque()
@@ -158,11 +162,16 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(id: IdExpr): ValueType {
         val variable = env.lookupVariable(id.id)
-        if (variable == null) {
-            errors.add(Error(id.line, id.column, 0x120, "Unknown name " + id.id))
-            return ValueType.VOID
+        if (variable != null) {
+            return resolveType(variable.type)
         }
-        return resolveType(variable.type)
+        val name = result.importMap[id.id] ?: id.id
+        if (classes.containsKey(id.id) || result.importMap.containsKey(id.id)) {
+            return ValueType("L${name.replace('.', '/')};", name, 0)
+        }
+
+        errors.add(Error(id.line, id.column, 0x120, "Unknown name " + id.id))
+        return ValueType.VOID
     }
 
     override fun visit(ret: ReturnExpr): ValueType {
@@ -412,6 +421,11 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(new: NewExpr): ValueType {
+        if (classes.containsKey(new.owner)) {
+            new.isClass = true
+            return ValueType("L" + new.owner + ";", new.owner, 0)
+        }
+
         try {
             val clazz: Class<*> = Class.forName(OtherUtils.resolveImport(new.owner, result.importMap))
             new.clazz = clazz
@@ -478,6 +492,21 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(field: GetField): ValueType {
+        val owner = visit(field.left)
+        if (classes.containsKey(owner.name)) {
+            val clazz = classes[owner.name]!!
+            val f = clazz.classFields[field.name]
+            if (f != null) {
+                field.phoenixField = f
+                field.ownerClass = clazz.name
+                field.isStatic = false
+                return f.type
+            } else {
+                errors.add(Error(field.line, field.column, 0x314, "Field not found: ${field.name}"))
+                return ValueType.VOID
+            }
+        }
+
         if (field.left is IdExpr && env.lookupVariable((field.left as IdExpr).id) == null) {
             val name = OtherUtils.resolveImport((field.left as IdExpr).id, result.importMap)
 
@@ -504,8 +533,6 @@ class SemanticAnalyzer : Visitor<ValueType> {
             return TypeUtils.typeByDescriptor(field.field!!.type.descriptorString())
         }
 
-        val owner: ValueType = visit(field.left)
-
         val name = OtherUtils.resolveImport(owner.name, result.importMap)
         try {
             field.clazz = Class.forName(name)
@@ -525,6 +552,29 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(field: SetField): ValueType {
+        val owner: ValueType = visit(field.left)
+        if (classes.containsKey(owner.name)) {
+            val calzz = classes[owner.name]!!
+            val f = calzz.classFields[field.id]
+            if (f != null) {
+                if (f.isConst) {
+                    errors.add(Error(field.line, field.column, 0x110, "Cannot assign to a constant field"))
+                    return ValueType.VOID
+                }
+                val vtype: ValueType = visit(field.right)
+                if (vtype != f.type) {
+                    errors.add(Error(field.line, field.column, 0x200, "Incompatible types: ${f.type} $vtype"))
+                }
+                field.phoenixField = f
+                field.ownerClass = owner.name
+                field.isStatic = false
+                return vtype
+            } else {
+                errors.add(Error(field.line, field.column, 0x314, "Field not found: ${field.id}"))
+                return ValueType.VOID
+            }
+        }
+
         if (field.left is IdExpr && env.lookupVariable((field.left as IdExpr).id) == null) {
             val name = OtherUtils.resolveImport((field.left as IdExpr).id, result.importMap)
             try {
@@ -560,7 +610,6 @@ class SemanticAnalyzer : Visitor<ValueType> {
             return value
         }
 
-        val owner: ValueType = visit(field.left)
         val value: ValueType = visit(field.right)
 
         if (owner == ValueType.VOID && field.left !is IdExpr) {
@@ -639,6 +688,18 @@ class SemanticAnalyzer : Visitor<ValueType> {
             result.importMap[clazz.simpleName] = clazz.canonicalName
         }
 
+        for (clazz in decl.classes) {
+            val fields: MutableMap<String, VariableSymbol> = mutableMapOf()
+            for (field in clazz.members) {
+                if (field is ClassField) {
+                    var decl = field.varDeclaration
+                    fields[decl.name] = VariableSymbol(decl.name, resolveType(decl.type!!), decl.isConst)
+                }
+            }
+
+            classes[clazz.name] = ClassSymbol(clazz.name, clazz.modifier, fields)
+        }
+
         for (f in decl.functions) {
 
             f.returnType = resolveType(f.returnType)
@@ -689,6 +750,10 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     private fun resolveType(type: ValueType): ValueType {
+        if (classes.containsKey(type.name)) {
+            return ValueType("L${type.name};", type.name, 0)
+        }
+
         val base = type.descriptor.removePrefix("[".repeat(type.dimensions))
         if (!base.startsWith("L") || base == "Ljava/lang/String;") {
             return type

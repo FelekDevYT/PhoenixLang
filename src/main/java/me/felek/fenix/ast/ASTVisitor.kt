@@ -2,7 +2,10 @@ package me.felek.fenix.ast
 
 import me.felek.ast.Expr
 import me.felek.ast.decl.Arg
+import me.felek.ast.decl.ClassDeclaration
 import me.felek.ast.decl.FunctionDeclaration
+import me.felek.ast.decl.clazz.ClassField
+import me.felek.ast.decl.clazz.ClassMember
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
@@ -52,10 +55,24 @@ import me.felek.fenix.utils.TypeUtils
 
 class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     val functions: MutableList<FunctionDeclaration> = mutableListOf()
+    val classes: MutableList<ClassDeclaration> = mutableListOf()
     val importMap: MutableMap<String, String> = mutableMapOf()
 
     override fun visitUsingDeclaration(ctx: FenixParser.UsingDeclarationContext?): Expr? {
         importMap[ctx!!.STRING().text.removeSurrounding("\"").substringAfterLast('.')] = ctx.STRING().text.removeSurrounding("\"")
+
+        return null
+    }
+
+    override fun visitClassDeclaration(ctx: FenixParser.ClassDeclarationContext?): Expr? {
+        val members: MutableList<ClassMember> = mutableListOf()
+        for (member in ctx!!.classMember()) {
+            if (member.classField() != null) {
+                members.add(ClassField(member.classField().start.line, member.classField().start.charPositionInLine, Modifier.valueOf(member.classField().BASE_MODIFIER().text.uppercase()), visit(member.classField().varDecl()) as VariableDeclaration))
+            }
+        }
+
+        classes.add(ClassDeclaration(ctx.start.line, ctx.start.charPositionInLine, Modifier.valueOf(ctx.BASE_MODIFIER().text.uppercase()), ctx.ID().text, members))
 
         return null
     }
@@ -292,6 +309,6 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     fun getResult(): ASTResult {
-        return ASTResult(functions, moduleName, importMap)
+        return ASTResult(functions, classes, moduleName, importMap)
     }
 }

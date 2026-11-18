@@ -11,4 +11,5 @@ import me.felek.ast.type.ValueType
 class VariableSymbol(var name: String, var type: ValueType, var isConst: Boolean = false) {
     public var id: Int = -1;
     public var isArgVar: Boolean = false;
+    public var isStatic: Boolean = false;
 }

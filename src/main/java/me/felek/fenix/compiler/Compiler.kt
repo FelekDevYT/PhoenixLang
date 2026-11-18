@@ -1,6 +1,8 @@
 package me.felek.fenix.compiler
 
 import me.felek.ast.Expr
+import me.felek.ast.decl.ClassDeclaration
+import me.felek.ast.decl.clazz.ClassField
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
@@ -41,6 +43,7 @@ import me.felek.ast.visitor.Visitor
 import me.felek.fenix.ast.ASTResult
 import me.felek.fenix.scope.Environment
 import me.felek.fenix.scope.FunctionSymbol
+import me.felek.fenix.scope.Modifier
 import me.felek.fenix.scope.VariableSymbol
 import me.felek.fenix.utils.TypeUtils
 import org.objectweb.asm.ClassWriter
@@ -61,6 +64,7 @@ import java.util.Deque
  */
 
 class Compiler : Visitor<Unit> {
+    private var compiled: MutableMap<String, ByteArray> = mutableMapOf()
     private var cw: ClassWriter = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
     private var ga: GeneratorAdapter? = null
     private var env: Environment = Environment(null)
@@ -172,6 +176,57 @@ class Compiler : Visitor<Unit> {
         }
 
         cw.visitEnd()
+        compiled[decl.moduleName] = cw.toByteArray()
+
+        for (clazz in decl.classes) {
+            compiled[clazz.name] = generateClassBytecode(clazz)
+        }
+    }
+
+    private fun generateClassBytecode(clazz: ClassDeclaration): ByteArray {
+        val classCw = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
+        classCw.visit(V21, ACC_PUBLIC, clazz.name, null, "Ljava/lang/Object;", null)
+
+        for (mem in clazz.members) {
+            if (mem is ClassField) {
+                val decl = mem.varDeclaration
+                val access = if (mem.modifier == Modifier.PUB) ACC_PUBLIC or ACC_STATIC else ACC_PRIVATE
+                classCw.visitField(access, decl.name, decl.type!!.descriptor, null, null).visitEnd()
+            }
+        }
+
+        val stMv = classCw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null)
+        val stGa = GeneratorAdapter(stMv, ACC_STATIC, "<clinit>", "()V")
+        stGa.visitCode()
+
+        val temp = env
+        env = Environment(env)
+        for (mem in clazz.members.filterIsInstance<ClassField>()) {
+            val decl = mem.varDeclaration
+
+            ga = stGa
+            env = Environment(null)
+
+            visit(decl.value!!)
+
+            stGa.visitFieldInsn(PUTSTATIC, clazz.name, decl.name, decl.type!!.descriptor)
+        }
+        env = temp
+        stGa.visitInsn(RETURN)
+        stGa.visitMaxs(0, 0)
+        stGa.visitEnd()
+
+        stGa.visitEnd()
+
+        val methVisit: MethodVisitor = classCw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null)
+        methVisit.visitCode()
+        methVisit.visitVarInsn(ALOAD, 0)
+        methVisit.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V")
+        methVisit.visitInsn(RETURN)
+        methVisit.visitMaxs(0, 0)
+        methVisit.visitEnd()
+
+        return classCw.toByteArray()
     }
 
     override fun visit(id: IdExpr) {
@@ -424,14 +479,21 @@ class Compiler : Visitor<Unit> {
     }
 
     override fun visit(new: NewExpr) {
-        ga!!.newInstance(Type.getType(new.clazz))
-        ga!!.visitInsn(DUP)
+        if (new.isClass) {
+            ga!!.visitTypeInsn(NEW, new.owner)
+            ga!!.visitInsn(DUP)
 
-        for (arg in new.args) {
-            visit(arg)
+            ga!!.visitMethodInsn(INVOKESPECIAL, new.owner, "<init>", "()V", false)
+        } else {
+            ga!!.newInstance(Type.getType(new.clazz))
+            ga!!.visitInsn(DUP)
+
+            for (arg in new.args) {
+                visit(arg)
+            }
+
+            ga!!.invokeConstructor(Type.getType(new.clazz), Method("<init>", new.constructorDescriptor))
         }
-
-        ga!!.invokeConstructor(Type.getType(new.clazz), Method("<init>", new.constructorDescriptor))
     }
 
     override fun visit(logic: LogicExpr) {
@@ -501,6 +563,12 @@ class Compiler : Visitor<Unit> {
     }
 
     override fun visit(field: GetField) {
+        if (field.phoenixField != null) {
+            visit(field.left)
+            ga!!.visitFieldInsn(GETFIELD, field.ownerClass, field.name, field.phoenixField!!.type.descriptor)
+            return
+        }
+
         if (field.isStatic) {
             ga!!.getStatic(Type.getType(field.clazz), field.name, Type.getType(field.field!!.type.descriptorString()))
             return
@@ -511,6 +579,13 @@ class Compiler : Visitor<Unit> {
     }
 
     override fun visit(field: SetField) {
+        if (field.phoenixField != null) {
+            visit(field.left)
+            visit(field.right)
+            ga!!.visitFieldInsn(PUTFIELD, field.ownerClass, field.id, field.phoenixField!!.type.descriptor)
+            return
+        }
+
         if (field.isStatic) {
             visit(field.right)
             ga!!.putStatic(Type.getType(field.clazz), field.id, Type.getType(field.field!!.type.descriptorString()))
@@ -559,8 +634,8 @@ class Compiler : Visitor<Unit> {
         }
     }
 
-    fun bytecode(): ByteArray {
-        return cw.toByteArray()
+    fun getCompiledClasses(): Map<String, ByteArray> {
+        return compiled
     }
 
     fun visitJump(e: Expr, falseLbl: Label) {

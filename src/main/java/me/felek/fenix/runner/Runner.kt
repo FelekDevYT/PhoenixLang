@@ -96,7 +96,16 @@ class Compile : CliktCommand(
 
         val compiler = Compiler()
         compiler.visit(sema.getResult())
-        Files.write(Paths.get(outputFile ?: Paths.get(inputFile).fileName.toString().removeSuffix(".phx") + ".class"), compiler.bytecode())
+        for ((name, bytes) in compiler.getCompiledClasses()) {
+            val out = if (name == inputFile.replace("phx", "").substringAfterLast('/').substringAfterLast('\\')) {
+                outputFile ?: (Paths.get(inputFile).fileName.toString().removeSuffix(".phx") + ".class")
+            } else {
+                "$name.class"
+            }
+
+            Files.write(Paths.get(out), bytes)
+            println("Compiled: $name")
+        }
     }
 }
 
