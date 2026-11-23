@@ -83,6 +83,11 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
         return null
     }
 
+    override fun visitModuleName(ctx: FenixParser.ModuleNameContext?): Expr? {
+        this.moduleName = ctx!!.STRING().text.substring(1, ctx.STRING().text.length - 1) + moduleName
+        return null
+    }
+
     override fun visitFunctionDeclaration(ctx: FenixParser.FunctionDeclarationContext?): Expr? {
         visitFunctionDeclaration_ASTNODE(ctx)
 

@@ -1,6 +1,7 @@
 grammar Fenix;
 
-program: usingDeclaration* (classDeclaration | functionDeclaration)* EOF;
+program: moduleName? usingDeclaration* (classDeclaration | functionDeclaration)* EOF;
+moduleName: 'module' STRING ';';
 usingDeclaration: 'using' STRING ';';
 
 classDeclaration: BASE_MODIFIER 'class' ID '{' classMember* '}';

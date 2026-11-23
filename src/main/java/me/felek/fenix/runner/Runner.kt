@@ -103,6 +103,9 @@ class Compile : CliktCommand(
                 "$name.class"
             }
 
+            Paths.get(out).parent?.let {
+                Files.createDirectories(it)
+            }
             Files.write(Paths.get(out), bytes)
             println("Compiled: $name")
         }
