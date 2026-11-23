@@ -1,37 +1,40 @@
 package me.felek.fenix.ast
 
 import me.felek.ast.Expr
+import me.felek.ast.Node
 import me.felek.ast.decl.Arg
 import me.felek.ast.decl.ClassDeclaration
 import me.felek.ast.decl.FunctionDeclaration
 import me.felek.ast.decl.clazz.ClassField
 import me.felek.ast.decl.clazz.ClassMember
+import me.felek.ast.decl.clazz.ClassMethod
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
-import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.literals.BoolLiteral
 import me.felek.ast.exprs.BreakExpr
 import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
-import me.felek.ast.exprs.FloatExpr
+import me.felek.ast.exprs.literals.FloatLiteral
 import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
-import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.literals.IntLiteral
 import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.SetField
-import me.felek.ast.exprs.StrExpr
+import me.felek.ast.exprs.literals.StrLiteral
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
+import me.felek.ast.exprs.literals.NullLiteral
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
 import me.felek.ast.exprs.util.Logic
@@ -70,6 +73,9 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
             if (member.classField() != null) {
                 members.add(ClassField(member.classField().start.line, member.classField().start.charPositionInLine, Modifier.valueOf(member.classField().BASE_MODIFIER().text.uppercase()), visit(member.classField().varDecl()) as VariableDeclaration))
             }
+            if (member.classMethod() != null) {
+                members.add(ClassMethod(member.classMethod().start.line, member.classMethod().start.charPositionInLine, visitFunctionDeclaration_ASTNODE(member.classMethod().functionDeclaration()) as FunctionDeclaration))
+            }
         }
 
         classes.add(ClassDeclaration(ctx.start.line, ctx.start.charPositionInLine, Modifier.valueOf(ctx.BASE_MODIFIER().text.uppercase()), ctx.ID().text, members))
@@ -78,6 +84,16 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitFunctionDeclaration(ctx: FenixParser.FunctionDeclarationContext?): Expr? {
+        visitFunctionDeclaration_ASTNODE(ctx)
+
+        return null
+    }
+
+    override fun visitNull(ctx: FenixParser.NullContext?): Expr {
+        return NullLiteral(ctx!!.start.line, ctx.start.charPositionInLine)
+    }
+
+    fun visitFunctionDeclaration_ASTNODE(ctx: FenixParser.FunctionDeclarationContext?): Node {
         val list: MutableList<Arg> = mutableListOf()
 
         for (arg in ctx!!.arg()) {
@@ -93,7 +109,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
 
         functions.add(FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, Modifier.valueOf(ctx.BASE_MODIFIER().text.uppercase()), if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)), body))
 
-        return null
+        return FunctionDeclaration(ctx.start.line, ctx.start.charPositionInLine, ctx.ID().text, list, Modifier.valueOf(ctx.BASE_MODIFIER().text.uppercase()), if (ctx.type() == null) ValueType.VOID else TypeUtils.typeByName(OtherUtils.resolveImport(ctx.type().text, importMap)), body)
     }
 
     override fun visitBlockExpr(ctx: FenixParser.BlockExprContext?): Expr {
@@ -105,15 +121,15 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitInt(ctx: FenixParser.IntContext?): Expr {
-        return IntExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().text.toInt())
+        return IntLiteral(ctx!!.start.line, ctx.start.charPositionInLine, ctx.INT().text.toInt())
     }
 
     override fun visitString(ctx: FenixParser.StringContext?): Expr {
-        return StrExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.STRING().text.substring(1, ctx.STRING().text.length - 1))
+        return StrLiteral(ctx!!.start.line, ctx.start.charPositionInLine, ctx.STRING().text.substring(1, ctx.STRING().text.length - 1))
     }
 
     override fun visitFloat(ctx: FenixParser.FloatContext?): Expr {
-        return FloatExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.FLOAT().text.toFloat())
+        return FloatLiteral(ctx!!.start.line, ctx.start.charPositionInLine, ctx.FLOAT().text.toFloat())
     }
 
     override fun visitArrayGet(ctx: FenixParser.ArrayGetContext?): Expr {
@@ -121,7 +137,7 @@ class ASTVisitor(var moduleName: String) : FenixBaseVisitor<Expr>() {
     }
 
     override fun visitBool(ctx: FenixParser.BoolContext?): Expr {
-        return BoolExpr(ctx!!.start.line, ctx.start.charPositionInLine, ctx.BOOL().text.toBoolean())
+        return BoolLiteral(ctx!!.start.line, ctx.start.charPositionInLine, ctx.BOOL().text.toBoolean())
     }
 
     override fun visitBlock(ctx: FenixParser.BlockContext?): Expr {

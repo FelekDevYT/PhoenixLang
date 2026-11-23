@@ -52,6 +52,7 @@ public class ValueType {
     public static final ValueType FLOAT = new ValueType("Float", "F");
     public static final ValueType BOOL = new ValueType("Bool", "Z");
     public static final ValueType VOID = new ValueType("Void", "V");
+    public static final ValueType NULL = new ValueType("Null", "Ljava/lang/Object;");
     public static final ValueType STRING = new ValueType("Str", "Ljava/lang/String;");
 
     @Override

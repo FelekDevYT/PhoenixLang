@@ -6,27 +6,28 @@ import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
-import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.literals.BoolLiteral
 import me.felek.ast.exprs.BreakExpr
 import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
-import me.felek.ast.exprs.FloatExpr
+import me.felek.ast.exprs.literals.FloatLiteral
 import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
-import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.literals.IntLiteral
 import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.SetField
-import me.felek.ast.exprs.StrExpr
+import me.felek.ast.exprs.literals.StrLiteral
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
+import me.felek.ast.exprs.literals.NullLiteral
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.invoke.InvokeVirtual
@@ -41,10 +42,11 @@ import me.felek.fenix.ast.ASTResult
  */
 
 interface Visitor<T> {
-    fun visit(expr: IntExpr): T
-    fun visit(expr: FloatExpr): T
-    fun visit(expr: StrExpr): T
-    fun visit(expr: BoolExpr): T
+    fun visit(expr: IntLiteral): T
+    fun visit(expr: FloatLiteral): T
+    fun visit(expr: StrLiteral): T
+    fun visit(expr: BoolLiteral): T
+    fun visit(expr: NullLiteral): T
 
     fun visit(expr: BlockExpr): T
 

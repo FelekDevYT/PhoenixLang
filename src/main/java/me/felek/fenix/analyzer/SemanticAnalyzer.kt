@@ -3,32 +3,34 @@ package me.felek.fenix.analyzer
 import io.github.classgraph.ClassGraph
 import me.felek.ast.Expr
 import me.felek.ast.decl.clazz.ClassField
+import me.felek.ast.decl.clazz.ClassMethod
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
-import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.literals.BoolLiteral
 import me.felek.ast.exprs.BreakExpr
 import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
-import me.felek.ast.exprs.FloatExpr
+import me.felek.ast.exprs.literals.FloatLiteral
 import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
-import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.literals.IntLiteral
 import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.SetField
-import me.felek.ast.exprs.StrExpr
+import me.felek.ast.exprs.literals.StrLiteral
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
+import me.felek.ast.exprs.literals.NullLiteral
 import me.felek.ast.invoke.InvokeLocalExpr
 import me.felek.ast.invoke.InvokeStaticExpr
 import me.felek.ast.invoke.InvokeVirtual
@@ -64,19 +66,19 @@ class SemanticAnalyzer : Visitor<ValueType> {
     private var continueQueue: ArrayDeque<Boolean> = ArrayDeque()
     private var breakQueue: ArrayDeque<Boolean> = ArrayDeque()
 
-    override fun visit(expr: IntExpr): ValueType {
+    override fun visit(expr: IntLiteral): ValueType {
         return ValueType.INT
     }
 
-    override fun visit(expr: FloatExpr): ValueType {
+    override fun visit(expr: FloatLiteral): ValueType {
         return ValueType.FLOAT
     }
 
-    override fun visit(expr: StrExpr): ValueType {
+    override fun visit(expr: StrLiteral): ValueType {
         return ValueType.STRING
     }
 
-    override fun visit(expr: BoolExpr): ValueType {
+    override fun visit(expr: BoolLiteral): ValueType {
         return ValueType.BOOL
     }
 
@@ -95,6 +97,30 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(expr: InvokeStaticExpr): ValueType {
         val className = OtherUtils.resolveImport(expr.owner, result.importMap)
+
+        if (classes.containsKey(className)) {
+            val clazz = classes[className]!!
+            val method = clazz.classMethods[expr.method]
+            if (method == null) {
+                errors.add(Error(expr.line, expr.column, 0x313, "Method not found!"))
+                return ValueType.VOID
+            }
+            val f = method.func
+            val args: List<ValueType> = expr.args.map { visit(it) }
+            if (args.size != f.args.size) {
+                errors.add(Error(expr.line, expr.column, 0x311, "Wrong number of arguments"))
+                return ValueType.VOID
+            }
+            for ((index, arg) in args.withIndex()) {
+                if (arg != f.args[index].type) {
+                    errors.add(Error(expr.line, expr.column, 0x311, "Wrong function argument"))
+                    return ValueType.VOID
+                }
+            }
+            expr.phoenixMethod = f
+            return f.returnType
+        }
+
         val clazz = try {
             Class.forName(className)
         } catch (_: ClassNotFoundException) {
@@ -139,7 +165,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
             return ValueType.VOID
         }
 
-        if (explicitType != null && type != null && explicitType != type) {
+        if (explicitType != null && type != null && !TypeUtils.isAssignableTo(explicitType, type)) {
             errors.add(Error(varDecl.line, varDecl.column, 0x200, "Incompatible types: $explicitType and $type"))
         }
 
@@ -177,8 +203,8 @@ class SemanticAnalyzer : Visitor<ValueType> {
     override fun visit(ret: ReturnExpr): ValueType {
         if (ret.expr != null) {
             val real = visit(ret.expr!!)
-            if (real!= currentFunction!!.returnType) {
-                errors.add(Error(ret.line, ret.column, 0x322, "Wrong function return: expected $real but found ${currentFunction!!.returnType}"))
+            if (!TypeUtils.isAssignableTo(currentFunction!!.returnType, real)) {
+                errors.add(Error(ret.line, ret.column, 0x322, "Wrong function return: expected ${currentFunction!!.returnType} but found $real"))
             }
         }
         return ValueType.VOID
@@ -217,11 +243,22 @@ class SemanticAnalyzer : Visitor<ValueType> {
     }
 
     override fun visit(eqCmp: EqCmpExpr): ValueType {
-        visit(eqCmp.left)
-        val type = visit(eqCmp.right)
+        val left = visit(eqCmp.left)
+        val right = visit(eqCmp.right)
 
-        eqCmp.type = Type.getType(type.descriptor)
+        val isLeftRef = left == ValueType.NULL || TypeUtils.isReferenceType(left)
+        val isRightRef = right == ValueType.NULL || TypeUtils.isReferenceType(right)
 
+        if (!isLeftRef || !isRightRef) {
+            errors.add(Error(eqCmp.line, eqCmp.column, 0x201, "Equality comparison needs refrence or null types"))
+        }
+        val cmpType = if (left == ValueType.NULL || right == ValueType.NULL) {
+            Type.getType("Ljava/lang/Object;")
+        } else {
+            Type.getType(right.descriptor)
+        }
+
+        eqCmp.type = cmpType
         return ValueType.BOOL
     }
 
@@ -291,7 +328,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
                 varType.dimensions - assignment.indexes.size
             )
 
-            if (result != out) {
+            if (!TypeUtils.isAssignableTo(result, out)) {
                 errors.add(Error(assignment.line, assignment.column, 0x200, "Incompatible types: $result and $out"))
             }
 
@@ -562,7 +599,7 @@ class SemanticAnalyzer : Visitor<ValueType> {
                     return ValueType.VOID
                 }
                 val vtype: ValueType = visit(field.right)
-                if (vtype != f.type) {
+                if (!TypeUtils.isAssignableTo(f.type, vtype)) {
                     errors.add(Error(field.line, field.column, 0x200, "Incompatible types: ${f.type} $vtype"))
                 }
                 field.phoenixField = f
@@ -641,10 +678,10 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
     override fun visit(expr: Expr): ValueType {
         return when (expr) {
-            is IntExpr -> visit(expr)
-            is FloatExpr -> visit(expr)
-            is BoolExpr -> visit(expr)
-            is StrExpr -> visit(expr)
+            is IntLiteral -> visit(expr)
+            is FloatLiteral -> visit(expr)
+            is BoolLiteral -> visit(expr)
+            is StrLiteral -> visit(expr)
             is BlockExpr -> visit(expr)
             is VariableDeclaration -> visit(expr)
             is IdExpr -> visit(expr)
@@ -672,11 +709,16 @@ class SemanticAnalyzer : Visitor<ValueType> {
             is GetField -> visit(expr)
             is SetField -> visit(expr)
             is DoWhileExpr -> visit(expr)
+            is NullLiteral -> visit(expr)
             else -> {
                 errors.add(Error(expr.line, expr.column, 0xF00, "Internal Compiler Error: Unknown expression ${expr.javaClass.name}"))
                 ValueType.VOID
             }
         }
+    }
+
+    override fun visit(expr: NullLiteral): ValueType {
+        return ValueType.NULL
     }
 
     override fun visit(decl: ASTResult): ValueType {
@@ -690,14 +732,24 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
         for (clazz in decl.classes) {
             val fields: MutableMap<String, VariableSymbol> = mutableMapOf()
-            for (field in clazz.members) {
-                if (field is ClassField) {
-                    var decl = field.varDeclaration
-                    fields[decl.name] = VariableSymbol(decl.name, resolveType(decl.type!!), decl.isConst)
+            val methods: MutableMap<String, ClassMethod> = mutableMapOf()
+
+            for (member in clazz.members) {
+                if (member is ClassField) {
+                    fields[member.varDeclaration.name] = VariableSymbol(member.varDeclaration.name, resolveType(member.varDeclaration.type!!), member.varDeclaration.isConst)
+                }
+
+                if (member is ClassMethod) {
+                    val function = member.func
+                    function.returnType = resolveType(function.returnType)
+                    for (arg in function.args) {
+                        arg.type = resolveType(arg.type)
+                    }
+                    methods[function.name] = member
+                    functions["${clazz.name}.${function.name}"] = FunctionSymbol(function.name, function.args, function.returnType, function.modifier)
                 }
             }
-
-            classes[clazz.name] = ClassSymbol(clazz.name, clazz.modifier, fields)
+            classes[clazz.name] = ClassSymbol(clazz.name, clazz.modifier, fields, methods)
         }
 
         for (f in decl.functions) {
@@ -736,6 +788,24 @@ class SemanticAnalyzer : Visitor<ValueType> {
 
             visit(f.body)
             env = temp
+        }
+
+        for (clazz in decl.classes) {
+            for (member in clazz.members) {
+                if (member is ClassMethod) {
+                    val f = member.func
+                    val temp: Environment = env
+                    env = Environment(env)
+                    for ((name, type) in f.args) {
+                        env.defineVariable(name, type, true)
+                    }
+                    currentFunction = FunctionSymbol(f.name, f.args, f.returnType, f.modifier)
+
+                    visit(f.body)
+                    currentFunction = null
+                    env = temp
+                }
+            }
         }
 
         return ValueType.VOID

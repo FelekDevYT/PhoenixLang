@@ -3,12 +3,13 @@ grammar Fenix;
 program: usingDeclaration* (classDeclaration | functionDeclaration)* EOF;
 usingDeclaration: 'using' STRING ';';
 
-classDeclaration: BASE_MODIFIER 'class' ID '{' (classMember ';')* '}';
+classDeclaration: BASE_MODIFIER 'class' ID '{' classMember* '}';
 functionDeclaration: BASE_MODIFIER 'func' ID '(' (arg (',' arg)*)? ')' ('->' type)? (block | '=' expr ';');
 arg: ID ':' type;
 
-classMember: classField;
+classMember: classField ';' | classMethod;
 classField: BASE_MODIFIER varDecl;
+classMethod: functionDeclaration;
 
 expr:
         '(' expr ')'                          #Parens
@@ -16,6 +17,7 @@ expr:
       | STRING                                #String
       | FLOAT                                 #Float
       | BOOL                                  #Bool
+      | NULL                                  #Null
       | expr 'is' type                        #Is
       | left=expr ('[' main+=expr ']')+       #ArrayGet
       | 'new' (ID | primitiveType) ('[' expr ']')+ #ArrayNewCreate
@@ -51,7 +53,7 @@ block: '{' (expr ';')* '}';
 varDecl: (VAR | CONST) ID (':' type)? ('=' expr)?;
 assignmentDecl: (ID | ID ('[' index+=expr ']')+) op=('=' | '+=' | '-=' | '*=' | '/=' | '%=') right=expr;
 
-type: base=('Int' | 'Str' | 'Float' | 'Bool' | 'Void' | ID) ('[' ']')*;
+type: base=('Int' | 'Str' | 'Float' | 'Bool' | 'Void' | 'Null' | ID) ('[' ']')*;
 primitiveType: 'Int' | 'Str' | 'Float' | 'Bool';
 
 BASE_MODIFIER: 'pub' | 'loc';
@@ -62,6 +64,7 @@ INT: [0-9]+;
 FLOAT: [0-9]+ '.' [0-9]+;
 STRING: '"' (~["\\"] | '\\' .)* '"';
 BOOL: 'true' | 'false';
+NULL: 'null';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 
 LINE_COMMENT: '//' ~[\r\n]* -> skip;

@@ -3,32 +3,34 @@ package me.felek.fenix.compiler
 import me.felek.ast.Expr
 import me.felek.ast.decl.ClassDeclaration
 import me.felek.ast.decl.clazz.ClassField
+import me.felek.ast.decl.clazz.ClassMethod
 import me.felek.ast.exprs.ArrayCreateExpr
 import me.felek.ast.exprs.ArrayGetExpr
 import me.felek.ast.exprs.AssignmentExpression
 import me.felek.ast.exprs.BinaryExpr
 import me.felek.ast.exprs.BlockExpr
-import me.felek.ast.exprs.BoolExpr
+import me.felek.ast.exprs.literals.BoolLiteral
 import me.felek.ast.exprs.BreakExpr
 import me.felek.ast.exprs.CastExpr
 import me.felek.ast.exprs.ContinueExpr
 import me.felek.ast.exprs.EqCmpExpr
-import me.felek.ast.exprs.FloatExpr
+import me.felek.ast.exprs.literals.FloatLiteral
 import me.felek.ast.loop.ForExpr
 import me.felek.ast.exprs.GetField
 import me.felek.ast.exprs.IdExpr
 import me.felek.ast.exprs.IfElseExpr
 import me.felek.ast.exprs.IncDecExpr
-import me.felek.ast.exprs.IntExpr
+import me.felek.ast.exprs.literals.IntLiteral
 import me.felek.ast.exprs.IsExpr
 import me.felek.ast.exprs.LogicExpr
 import me.felek.ast.exprs.NewExpr
 import me.felek.ast.exprs.ReturnExpr
 import me.felek.ast.exprs.SetField
-import me.felek.ast.exprs.StrExpr
+import me.felek.ast.exprs.literals.StrLiteral
 import me.felek.ast.exprs.UnaryMinusExpr
 import me.felek.ast.exprs.UnaryNotExpr
 import me.felek.ast.exprs.VariableDeclaration
+import me.felek.ast.exprs.literals.NullLiteral
 import me.felek.ast.exprs.util.AssignmentType
 import me.felek.ast.exprs.util.BinaryType
 import me.felek.ast.exprs.util.ECType
@@ -73,19 +75,19 @@ class Compiler : Visitor<Unit> {
     private var breakQueue: Deque<Label> = ArrayDeque()
     private var continueQueue: Deque<Label> = ArrayDeque()
 
-    override fun visit(expr: IntExpr) {
+    override fun visit(expr: IntLiteral) {
         ga!!.push(expr.value)
     }
 
-    override fun visit(expr: FloatExpr) {
+    override fun visit(expr: FloatLiteral) {
         ga!!.push(expr.value)
     }
 
-    override fun visit(expr: StrExpr) {
+    override fun visit(expr: StrLiteral) {
         ga!!.push(expr.value)
     }
 
-    override fun visit(expr: BoolExpr) {
+    override fun visit(expr: BoolLiteral) {
         ga!!.push(expr.value)
     }
 
@@ -103,7 +105,22 @@ class Compiler : Visitor<Unit> {
             visit(arg)
         }
 
-        ga!!.invokeStatic(TypeUtils.getAsmType(expr.owner), Method.getMethod(expr.methodImpl))
+        if (expr.phoenixMethod != null) {
+            val f = expr.phoenixMethod!!
+            val sb = StringBuilder(f.returnType.descriptor)
+            sb.append(" ").append(expr.method).append("(")
+            for (arg in f.args) {
+                sb.append(arg.type.descriptor)
+            }
+            sb.append(")")
+            ga!!.invokeStatic(TypeUtils.getAsmType(expr.owner), Method.getMethod(sb.toString()))
+        } else {
+            ga!!.invokeStatic(TypeUtils.getAsmType(expr.owner), Method.getMethod(expr.methodImpl))
+        }
+    }
+
+    override fun visit(expr: NullLiteral) {
+        ga!!.visitInsn(ACONST_NULL)
     }
 
     @Suppress("kotlin:S6611")
@@ -225,6 +242,42 @@ class Compiler : Visitor<Unit> {
         methVisit.visitInsn(RETURN)
         methVisit.visitMaxs(0, 0)
         methVisit.visitEnd()
+
+        for (mem in clazz.members) {
+            if (mem is ClassMethod) {
+                val f = mem.func
+                val sb = StringBuilder("(")
+                for (arg in f.args) {
+                    sb.append(arg.type.descriptor)
+                }
+                sb.append(")")
+                sb.append(f.returnType.descriptor)
+
+                val mv = classCw.visitMethod(f.modifier.opcode, f.name, sb.toString(), null, null)
+                val methGa = GeneratorAdapter(mv, f.modifier.opcode, f.name, sb.toString())
+                methGa.visitCode()
+
+                val temp = env
+                val tempGa = ga
+                env = Environment(env)
+                ga = methGa
+
+                for ((index, arg) in f.args.withIndex()) {
+                    val vs = VariableSymbol(arg.name, arg.type, true)
+                    vs.isArgVar = true
+                    vs.id = index
+                    env.defineVariable(arg.name, vs)
+                }
+
+                visit(f.body)
+
+                ga = tempGa
+                env = temp
+
+                methGa.visitMaxs(0, 0)
+                methGa.visitEnd()
+            }
+        }
 
         return classCw.toByteArray()
     }
@@ -600,10 +653,10 @@ class Compiler : Visitor<Unit> {
     override fun visit(expr: Expr) {
         return when (expr) {
             is InvokeStaticExpr -> visit(expr)
-            is IntExpr -> visit(expr)
-            is FloatExpr -> visit(expr)
-            is BoolExpr -> visit(expr)
-            is StrExpr -> visit(expr)
+            is IntLiteral -> visit(expr)
+            is FloatLiteral -> visit(expr)
+            is BoolLiteral -> visit(expr)
+            is StrLiteral -> visit(expr)
             is BlockExpr -> visit(expr)
             is VariableDeclaration -> visit(expr)
             is IdExpr -> visit(expr)
@@ -630,6 +683,7 @@ class Compiler : Visitor<Unit> {
             is SetField -> visit(expr)
             is GetField -> visit(expr)
             is DoWhileExpr -> visit(expr)
+            is NullLiteral -> visit(expr)
             else -> throw RuntimeException("No expression found for " + expr.javaClass.name)
         }
     }

@@ -1,6 +1,7 @@
 package me.felek.ast.invoke
 
 import me.felek.ast.Expr
+import me.felek.ast.decl.FunctionDeclaration
 import org.objectweb.asm.commons.Method
 
 /**
@@ -10,5 +11,6 @@ import org.objectweb.asm.commons.Method
  */
 
 class InvokeStaticExpr(line: Int, column: Int, var owner: String, var method: String, var args: List<Expr>) : Expr(line, column) {
-    lateinit var methodImpl: java.lang.reflect.Method
+    var methodImpl: java.lang.reflect.Method? = null
+    var phoenixMethod: FunctionDeclaration? = null
 }

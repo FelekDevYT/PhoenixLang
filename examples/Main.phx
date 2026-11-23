@@ -1,11 +1,2 @@
-pub class Test {
-    pub var a: Int = 15;
-}
-
-pub func main(a: Int, b: Int) -> Void {
-    var a: Int = 0;
-    do {
-        System.out.println("Hello, i'am here!");
-    } while (a >= 10);
-    return;
+pub func main(a: Int, b: Int, c: Int) -> Bool {
 }

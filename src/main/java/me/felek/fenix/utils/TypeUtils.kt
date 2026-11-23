@@ -20,6 +20,7 @@ object TypeUtils {
             "Bool" -> ValueType.BOOL
             "Str" -> ValueType.STRING
             "Void" -> ValueType.VOID
+            "Null" -> ValueType.NULL
             else -> {
                 if (nm.isBlank()) {
                     throw UndefinedTypeException(name)
@@ -67,8 +68,9 @@ object TypeUtils {
 
     @JvmStatic
     fun canCast(typeA: ValueType, typeB: ValueType): Boolean {
+        if (typeA == ValueType.NULL && isReferenceType(typeB)) return true
+        if (typeB == ValueType.NULL && isReferenceType(typeA)) return true
         val convertable = listOf<ValueType>(ValueType.INT, ValueType.FLOAT)
-
         return convertable.contains(typeA) && convertable.contains(typeB)
     }
 
@@ -77,13 +79,28 @@ object TypeUtils {
         if (typeA == typeB) {
             return typeA
         }
-
+        if (typeA == ValueType.NULL && isReferenceType(typeB)) {
+            return typeB
+        }
         if (typeA == ValueType.INT && typeB == ValueType.FLOAT) {
             return ValueType.FLOAT
-        } else if (typeA == ValueType.FLOAT && typeB == ValueType.INT) {
+        }
+        if (typeA == ValueType.FLOAT && typeB == ValueType.INT) {
             return ValueType.FLOAT
         }
+        return ValueType.VOID
+    }
 
-        return ValueType.VOID//unallowed cast
+    @JvmStatic
+    fun isReferenceType(type: ValueType): Boolean {
+        return type.descriptor.startsWith("L") || type.descriptor.startsWith("[")
+    }
+
+    @JvmStatic
+    fun isAssignableTo(v1: ValueType, v2: ValueType): Boolean {
+        if (v1 == v2) return true
+        if (v2 == ValueType.NULL && isReferenceType(v1)) return true
+        if (v1 == ValueType.NULL && isReferenceType(v2)) return true
+        return false
     }
 }
